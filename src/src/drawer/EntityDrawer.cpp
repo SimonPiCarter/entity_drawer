@@ -1,0 +1,291 @@
+
+#include "EntityDrawer.h"
+#include <godot_cpp/variant/utility_functions.hpp>
+
+#include <algorithm>
+
+namespace godot
+{
+
+	String DirectionHandler::up_base = String("up_");
+	String DirectionHandler::down_base = String("down_");
+	String DirectionHandler::left_base = String("left");
+	String DirectionHandler::right_base = String("right_");
+
+	void EntityDrawer::_ready()
+	{}
+
+	int EntityDrawer::add_instance(Vector2 const &pos_p, Vector2 const &offset_p, Ref<SpriteFrames> const & animation_p,
+		StringName const &current_animation_p, StringName const &next_animation_p, bool one_shot_p)
+	{
+		if(_freeIdx.empty())
+		{
+			_instances.push_back({offset_p, animation_p, true, _elapsedTime, 0, current_animation_p, next_animation_p, one_shot_p});
+			_newPos.push_back(pos_p);
+			_oldPos.push_back(pos_p);
+
+			return int(_instances.size()-1);
+		}
+		else
+		{
+			size_t idx_l = _freeIdx.front();
+			_freeIdx.pop_front();
+			_instances[idx_l].offset = offset_p;
+			_instances[idx_l].animation = animation_p;
+			_instances[idx_l].enabled = true;
+			_instances[idx_l].start = _elapsedTime;
+			_instances[idx_l].frame_idx = 0;
+			_instances[idx_l].current_animation = current_animation_p;
+			_instances[idx_l].next_animation = next_animation_p;
+			_instances[idx_l].one_shot = one_shot_p;
+			_instances[idx_l].handler = -1;
+			_newPos[idx_l] = pos_p;
+			_oldPos[idx_l] = pos_p;
+
+			return int(idx_l);
+		}
+
+		// std::sort(_instances.begin(), _instances.end(),
+		// 	[](EntityInstance const & a, EntityInstance const & b)
+		// 	{
+		// 		return a.position.y < b.position.y;
+		// 	}
+		// );
+
+	}
+
+	void EntityDrawer::update_pos()
+	{
+		_elapsedTime = 0.;
+		// swap positions
+		std::swap(_oldPos, _newPos);
+	}
+
+	std::vector<Vector2> & EntityDrawer::getNewPos()
+	{
+		return _newPos;
+	}
+
+	void EntityDrawer::_physics_process(double delta_p)
+	{
+		size_t i = 0;
+		for(DirectionHandler &handler_l : _directionHandlers)
+		{
+			if(!handler_l.enabled)
+			{
+				++i;
+				continue;
+			}
+			Vector2 dir_l = handler_l.direction;
+			int new_type = DirectionHandler::NONE;
+			if(dir_l.length_squared() < 0.1)
+			{
+				dir_l = _newPos[handler_l.instance] - _oldPos[handler_l.instance];
+			}
+			if(dir_l.length_squared() > 0.1)
+			{
+				if(std::abs(dir_l.x) > std::abs(dir_l.y))
+				{
+					if(dir_l.x > 0)
+					{
+						new_type = DirectionHandler::RIGHT;
+					}
+					else
+					{
+						new_type = DirectionHandler::LEFT;
+					}
+				}
+				else
+				{
+					if(dir_l.y > 0)
+					{
+						new_type = DirectionHandler::DOWN;
+					}
+					else
+					{
+						new_type = DirectionHandler::UP;
+					}
+				}
+			}
+			if(new_type != DirectionHandler::NONE)
+			{
+				if(new_type != handler_l.count_type)
+				{
+					handler_l.count = 0;
+					handler_l.count_type = new_type;
+				}
+				if(handler_l.count < 100)
+				{
+					++handler_l.count;
+				}
+			}
+			else
+			{
+				handler_l.count = 0;
+				handler_l.count_type = DirectionHandler::NONE;
+			}
+
+			if((handler_l.count > 5
+			&& handler_l.count_type != DirectionHandler::NONE
+			&& handler_l.count_type != handler_l.type))
+			{
+				handler_l.type = handler_l.count_type;
+			}
+			++i;
+		}
+	}
+	StringName const & get_anim(EntityInstance const &instance_p, DirectionHandler const &handler_p)
+	{
+		if(handler_p.type < 0)
+		{
+			return instance_p.current_animation;
+		}
+		return handler_p.names[handler_p.type];
+	}
+
+	StringName const & get_anim(EntityInstance const &instance_p, std::vector<DirectionHandler> const &directionHandlers_p)
+	{
+		if(instance_p.handler < 0)
+		{
+			return instance_p.current_animation;
+		}
+		return get_anim(instance_p, directionHandlers_p[instance_p.handler]);
+	}
+
+	void init_handler(EntityInstance const &instance_p, std::vector<DirectionHandler> &directionHandlers_p)
+	{
+		if(instance_p.handler < 0)
+		{
+			return;
+		}
+		DirectionHandler &handler_l = directionHandlers_p[instance_p.handler];
+		if(handler_l.base_name == instance_p.current_animation)
+		{
+			return;
+		}
+		handler_l.base_name = instance_p.current_animation;
+		handler_l.names[DirectionHandler::UP] = StringName(DirectionHandler::up_base+instance_p.current_animation);
+		handler_l.names[DirectionHandler::DOWN] = StringName(DirectionHandler::down_base+instance_p.current_animation);
+		handler_l.names[DirectionHandler::LEFT] = StringName(DirectionHandler::left_base+instance_p.current_animation);
+		handler_l.names[DirectionHandler::RIGHT] = StringName(DirectionHandler::right_base+instance_p.current_animation);
+	}
+
+	void EntityDrawer::set_animation(int idx_p, StringName const &current_animation_p, StringName const &next_animation_p)
+	{
+		EntityInstance &instance_l = _instances[idx_p];
+
+		instance_l.current_animation = current_animation_p;
+		instance_l.next_animation = next_animation_p;
+		instance_l.frame_idx = 0;
+		instance_l.start = _elapsedTime;
+
+		init_handler(instance_l, _directionHandlers);
+	}
+
+	void EntityDrawer::set_direction(int idx_p, Vector2 const &direction_p)
+	{
+		EntityInstance &instance_l = _instances[idx_p];
+		if(instance_l.handler < 0)
+		{
+			return;
+		}
+		_directionHandlers[instance_l.handler].direction = direction_p;
+	}
+
+	void EntityDrawer::add_direction_handler(int idx_p)
+	{
+		EntityInstance &instance_l = _instances[idx_p];
+		int idxHandler_l = -1;
+		if(_freeHandlersIdx.empty())
+		{
+			idxHandler_l = int(_directionHandlers.size());
+			_directionHandlers.push_back(DirectionHandler());
+			_directionHandlers.back().instance = idx_p;
+		}
+		else
+		{
+			size_t idx_l = _freeHandlersIdx.front();
+			_freeHandlersIdx.pop_front();
+			_directionHandlers[idx_l].direction = Vector2();
+			_directionHandlers[idx_l].type = DirectionHandler::NONE;
+			_directionHandlers[idx_l].enabled = true;
+			_directionHandlers[idx_l].count = 0;
+			_directionHandlers[idx_l].instance = idx_p;
+			_directionHandlers[idx_l].count_type = DirectionHandler::NONE;
+			idxHandler_l = int(idx_l);
+		}
+		instance_l.handler = idxHandler_l;
+		init_handler(instance_l, _directionHandlers);
+	}
+
+	void EntityDrawer::_process(double delta_p)
+	{
+		_elapsedTime += delta_p;
+		queue_redraw();
+	}
+
+	void EntityDrawer::_draw()
+	{
+		size_t i = 0;
+		for(EntityInstance &instance_l : _instances)
+		{
+			StringName const &cur_anim_l = get_anim(instance_l, _directionHandlers);
+			if(instance_l.enabled && instance_l.animation.is_valid() && instance_l.animation->get_frame_count(cur_anim_l) > 0)
+			{
+				double frameTime_l = instance_l.animation->get_frame_duration(cur_anim_l, instance_l.frame_idx) / instance_l.animation->get_animation_speed(cur_anim_l) ;
+				double nextFrameTime_l = instance_l.start + instance_l.frame_idx * frameTime_l;
+				if(_elapsedTime >= nextFrameTime_l)
+				{
+					++instance_l.frame_idx;
+				}
+				if(instance_l.frame_idx >= instance_l.animation->get_frame_count(cur_anim_l))
+				{
+					if(instance_l.one_shot)
+					{
+						// free animation
+						instance_l.enabled = false;
+						_freeIdx.push_back(i);
+						if(instance_l.handler >= 0)
+						{
+							DirectionHandler & handler_l = _directionHandlers[instance_l.handler];
+							handler_l.enabled = false;
+							_freeHandlersIdx.push_back(i);
+						}
+					}
+					else if(!instance_l.next_animation.is_empty())
+					{
+						instance_l.current_animation = instance_l.next_animation;
+						instance_l.next_animation = StringName("");
+						init_handler(instance_l, _directionHandlers);
+					}
+					instance_l.frame_idx = 0;
+					instance_l.start = _elapsedTime;
+				}
+				// if still enabled
+				if(instance_l.enabled)
+				{
+					Vector2 diff_l = _newPos[i] - _oldPos[i];
+					Vector2 pos_l = instance_l.offset + _oldPos[i] + diff_l * std::min<real_t>(1., real_t(_elapsedTime/_timeStep));
+					// draw animaton
+					Ref<Texture2D> texture_l = instance_l.animation->get_frame_texture(cur_anim_l, instance_l.frame_idx);
+					texture_l->draw(get_canvas_item(), pos_l);
+				}
+			}
+			++i;
+		}
+	}
+
+	void EntityDrawer::_bind_methods()
+	{
+		ClassDB::bind_method(D_METHOD("add_instance", "position", "offset", "animation", "current_animation", "next_animation", "one_shot"), &EntityDrawer::add_instance);
+		ClassDB::bind_method(D_METHOD("update_pos"), &EntityDrawer::update_pos);
+
+		ClassDB::bind_method(D_METHOD("set_animation", "instance", "current_animation", "next_animation"), &EntityDrawer::set_animation);
+		ClassDB::bind_method(D_METHOD("set_direction", "instance", "direction"), &EntityDrawer::set_direction);
+		ClassDB::bind_method(D_METHOD("add_direction_handler", "instance"), &EntityDrawer::add_direction_handler);
+
+		ADD_GROUP("EntityDrawer", "EntityDrawer_");
+	}
+
+} // namespace godot
+
