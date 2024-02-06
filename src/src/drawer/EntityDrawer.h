@@ -5,6 +5,8 @@
 #include <godot_cpp/classes/atlas_texture.hpp>
 #include <godot_cpp/classes/sprite_frames.hpp>
 
+#include <array>
+
 namespace godot {
 
 struct EntityInstance
@@ -34,11 +36,6 @@ struct DirectionHandler
 	static int const LEFT = 2;
 	static int const RIGHT = 2;
 
-	static String up_base;
-	static String down_base;
-	static String left_base;
-	static String right_base;
-
 	// dynamic data
 	Vector2 direction;
 	int type = -1;
@@ -66,6 +63,8 @@ public:
 	void set_animation(int idx_p, StringName const &current_animation_p, StringName const &next_animation_p);
 	void set_direction(int idx_p, Vector2 const &direction_p);
 	void add_direction_handler(int idx_p);
+	void set_new_pos(int idx_p, Vector2 const &pos_p);
+	Vector2 const & get_old_pos(int idx_p);
 
 	void update_pos();
 	std::vector<Vector2> & getNewPos();

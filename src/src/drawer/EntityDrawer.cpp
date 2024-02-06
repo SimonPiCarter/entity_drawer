@@ -7,11 +7,6 @@
 namespace godot
 {
 
-	String DirectionHandler::up_base = String("up_");
-	String DirectionHandler::down_base = String("down_");
-	String DirectionHandler::left_base = String("left");
-	String DirectionHandler::right_base = String("right_");
-
 	void EntityDrawer::_ready()
 	{}
 
@@ -134,11 +129,12 @@ namespace godot
 			++i;
 		}
 	}
+
 	StringName const & get_anim(EntityInstance const &instance_p, DirectionHandler const &handler_p)
 	{
 		if(handler_p.type < 0)
 		{
-			return instance_p.current_animation;
+			return handler_p.names[0];
 		}
 		return handler_p.names[handler_p.type];
 	}
@@ -164,10 +160,10 @@ namespace godot
 			return;
 		}
 		handler_l.base_name = instance_p.current_animation;
-		handler_l.names[DirectionHandler::UP] = StringName(DirectionHandler::up_base+instance_p.current_animation);
-		handler_l.names[DirectionHandler::DOWN] = StringName(DirectionHandler::down_base+instance_p.current_animation);
-		handler_l.names[DirectionHandler::LEFT] = StringName(DirectionHandler::left_base+instance_p.current_animation);
-		handler_l.names[DirectionHandler::RIGHT] = StringName(DirectionHandler::right_base+instance_p.current_animation);
+		handler_l.names[DirectionHandler::UP] = StringName("up_"+instance_p.current_animation);
+		handler_l.names[DirectionHandler::DOWN] = StringName("down_"+instance_p.current_animation);
+		handler_l.names[DirectionHandler::LEFT] = StringName("left_"+instance_p.current_animation);
+		handler_l.names[DirectionHandler::RIGHT] = StringName("right_"+instance_p.current_animation);
 	}
 
 	void EntityDrawer::set_animation(int idx_p, StringName const &current_animation_p, StringName const &next_animation_p)
@@ -207,15 +203,25 @@ namespace godot
 			size_t idx_l = _freeHandlersIdx.front();
 			_freeHandlersIdx.pop_front();
 			_directionHandlers[idx_l].direction = Vector2();
-			_directionHandlers[idx_l].type = DirectionHandler::NONE;
+			_directionHandlers[idx_l].type = -1;
 			_directionHandlers[idx_l].enabled = true;
 			_directionHandlers[idx_l].count = 0;
 			_directionHandlers[idx_l].instance = idx_p;
-			_directionHandlers[idx_l].count_type = DirectionHandler::NONE;
+			_directionHandlers[idx_l].count_type = -1;
 			idxHandler_l = int(idx_l);
 		}
 		instance_l.handler = idxHandler_l;
 		init_handler(instance_l, _directionHandlers);
+	}
+
+	void EntityDrawer::set_new_pos(int idx_p, Vector2 const &pos_p)
+	{
+		_newPos[idx_p] = pos_p;
+	}
+
+	Vector2 const & EntityDrawer::get_old_pos(int idx_p)
+	{
+		return _oldPos[idx_p];
 	}
 
 	void EntityDrawer::_process(double delta_p)
@@ -283,6 +289,10 @@ namespace godot
 		ClassDB::bind_method(D_METHOD("set_animation", "instance", "current_animation", "next_animation"), &EntityDrawer::set_animation);
 		ClassDB::bind_method(D_METHOD("set_direction", "instance", "direction"), &EntityDrawer::set_direction);
 		ClassDB::bind_method(D_METHOD("add_direction_handler", "instance"), &EntityDrawer::add_direction_handler);
+		ClassDB::bind_method(D_METHOD("set_new_pos", "instance", "pos"), &EntityDrawer::set_new_pos);
+		ClassDB::bind_method(D_METHOD("get_old_pos", "instance"), &EntityDrawer::get_old_pos);
+
+		ClassDB::bind_method(D_METHOD("set_time_step", "time_step"), &EntityDrawer::set_time_step);
 
 		ADD_GROUP("EntityDrawer", "EntityDrawer_");
 	}
