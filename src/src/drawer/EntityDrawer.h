@@ -34,7 +34,7 @@ struct DirectionHandler
 	static int const UP = 0;
 	static int const DOWN = 1;
 	static int const LEFT = 2;
-	static int const RIGHT = 2;
+	static int const RIGHT = 3;
 
 	// dynamic data
 	Vector2 direction;
@@ -79,7 +79,7 @@ public:
 	// Use this to add properties to your class
 	static void _bind_methods();
 
-	void setTimeStep(double timeStep_p) { _timeStep = timeStep_p; }
+	void set_time_step(double timeStep_p) { _timeStep = timeStep_p; }
 
 private:
 	std::vector<EntityInstance> _instances;
