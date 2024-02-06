@@ -61,8 +61,10 @@ public:
 		StringName const &current_animation_p, StringName const &next_animation_p, bool one_shot_p);
 
 	void set_animation(int idx_p, StringName const &current_animation_p, StringName const &next_animation_p);
+	void set_animation_one_shot(int idx_p, StringName const &current_animation_p);
 	void set_direction(int idx_p, Vector2 const &direction_p);
 	void add_direction_handler(int idx_p);
+	void remove_direction_handler(int idx_p);
 	void set_new_pos(int idx_p, Vector2 const &pos_p);
 	Vector2 const & get_old_pos(int idx_p);
 

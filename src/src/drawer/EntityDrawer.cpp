@@ -174,6 +174,19 @@ namespace godot
 		instance_l.next_animation = next_animation_p;
 		instance_l.frame_idx = 0;
 		instance_l.start = _elapsedAllTime;
+		instance_l.one_shot = false;
+
+		init_handler(instance_l, _directionHandlers);
+	}
+
+	void EntityDrawer::set_animation_one_shot(int idx_p, StringName const &current_animation_p)
+	{
+		EntityInstance &instance_l = _instances[idx_p];
+
+		instance_l.current_animation = current_animation_p;
+		instance_l.frame_idx = 0;
+		instance_l.start = _elapsedAllTime;
+		instance_l.one_shot = true;
 
 		init_handler(instance_l, _directionHandlers);
 	}
@@ -212,6 +225,17 @@ namespace godot
 		}
 		instance_l.handler = idxHandler_l;
 		init_handler(instance_l, _directionHandlers);
+	}
+
+	void EntityDrawer::remove_direction_handler(int idx_p)
+	{
+		EntityInstance &instance_l = _instances[idx_p];
+		if(instance_l.handler >= 0)
+		{
+			_directionHandlers[instance_l.handler].enabled = false;
+			_freeHandlersIdx.push_back(instance_l.handler);
+			instance_l.handler = -1;
+		}
 	}
 
 	void EntityDrawer::set_new_pos(int idx_p, Vector2 const &pos_p)
@@ -288,8 +312,10 @@ namespace godot
 		ClassDB::bind_method(D_METHOD("update_pos"), &EntityDrawer::update_pos);
 
 		ClassDB::bind_method(D_METHOD("set_animation", "instance", "current_animation", "next_animation"), &EntityDrawer::set_animation);
+		ClassDB::bind_method(D_METHOD("set_animation_one_shot", "instance", "current_animation"), &EntityDrawer::set_animation_one_shot);
 		ClassDB::bind_method(D_METHOD("set_direction", "instance", "direction"), &EntityDrawer::set_direction);
 		ClassDB::bind_method(D_METHOD("add_direction_handler", "instance"), &EntityDrawer::add_direction_handler);
+		ClassDB::bind_method(D_METHOD("remove_direction_handler", "instance"), &EntityDrawer::remove_direction_handler);
 		ClassDB::bind_method(D_METHOD("set_new_pos", "instance", "pos"), &EntityDrawer::set_new_pos);
 		ClassDB::bind_method(D_METHOD("get_old_pos", "instance"), &EntityDrawer::get_old_pos);
 
