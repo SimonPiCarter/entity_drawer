@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/node2d.hpp>
 #include <godot_cpp/classes/atlas_texture.hpp>
 #include <godot_cpp/classes/sprite_frames.hpp>
+#include <godot_cpp/classes/shader_material.hpp>
 
 #include <array>
 
@@ -25,6 +26,10 @@ struct EntityInstance
 	bool mirrored = false;
 	/// @brief index to direction handler (if >= 0)
 	int handler = -1;
+
+	// GODOT RID used for efficient display
+	RID _canvas;
+	Ref<ShaderMaterial> _material;
 };
 
 struct DirectionHandler
@@ -57,6 +62,8 @@ class EntityDrawer : public Node2D {
 	GDCLASS(EntityDrawer, Node2D)
 
 public:
+	~EntityDrawer();
+
 	int add_instance(Vector2 const &pos_p, Vector2 const &offset_p, Ref<SpriteFrames> const & animation_p,
 		StringName const &current_animation_p, StringName const &next_animation_p, bool one_shot_p);
 
@@ -82,8 +89,11 @@ public:
 	static void _bind_methods();
 
 	void set_time_step(double timeStep_p) { _timeStep = timeStep_p; }
+	void set_shader(Ref<Shader> const &shader_p) { _shader = shader_p; }
 
 private:
+	Ref<Shader> _shader;
+
 	std::vector<EntityInstance> _instances;
 	std::vector<DirectionHandler> _directionHandlers;
 	std::list<size_t> _freeIdx;

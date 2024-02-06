@@ -1,14 +1,24 @@
 
 #include "EntityDrawer.h"
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/classes/rendering_server.hpp>
 
 #include <algorithm>
 
 namespace godot
 {
+	EntityDrawer::~EntityDrawer()
+	{
+		for(EntityInstance &instance_l : _instances)
+		{
+			RenderingServer::get_singleton()->free_rid(instance_l._canvas);
+		}
+	}
 
 	void EntityDrawer::_ready()
-	{}
+	{
+		set_y_sort_enabled(true);
+	}
 
 	int EntityDrawer::add_instance(Vector2 const &pos_p, Vector2 const &offset_p, Ref<SpriteFrames> const & animation_p,
 		StringName const &current_animation_p, StringName const &next_animation_p, bool one_shot_p)
@@ -18,6 +28,15 @@ namespace godot
 			_instances.push_back({offset_p, animation_p, true, _elapsedTime, 0, current_animation_p, next_animation_p, one_shot_p});
 			_newPos.push_back(pos_p);
 			_oldPos.push_back(pos_p);
+
+			// set up resources
+			EntityInstance &instance_l = _instances.back();
+			instance_l._canvas = RenderingServer::get_singleton()->canvas_item_create();
+			instance_l._material = Ref<ShaderMaterial>(memnew(ShaderMaterial));
+			instance_l._material->set_shader(_shader);
+
+			RenderingServer::get_singleton()->canvas_item_set_parent(instance_l._canvas, get_canvas_item());
+			RenderingServer::get_singleton()->canvas_item_set_material(instance_l._canvas, instance_l._material->get_rid());
 
 			return int(_instances.size()-1);
 		}
@@ -296,10 +315,12 @@ namespace godot
 				if(instance_l.enabled)
 				{
 					Vector2 diff_l = _newPos[i] - _oldPos[i];
-					Vector2 pos_l = instance_l.offset + _oldPos[i] + diff_l * std::min<real_t>(1., real_t(_elapsedTime/_timeStep));
+					Vector2 pos_l =  _oldPos[i] + diff_l * std::min<real_t>(1., real_t(_elapsedTime/_timeStep));
 					// draw animaton
 					Ref<Texture2D> texture_l = instance_l.animation->get_frame_texture(cur_anim_l, instance_l.frame_idx);
-					texture_l->draw(get_canvas_item(), pos_l);
+					RenderingServer::get_singleton()->canvas_item_set_transform(instance_l._canvas, Transform2D(0., pos_l));
+					RenderingServer::get_singleton()->canvas_item_clear(instance_l._canvas);
+					texture_l->draw(instance_l._canvas, instance_l.offset);
 				}
 			}
 			++i;
@@ -318,6 +339,7 @@ namespace godot
 		ClassDB::bind_method(D_METHOD("remove_direction_handler", "instance"), &EntityDrawer::remove_direction_handler);
 		ClassDB::bind_method(D_METHOD("set_new_pos", "instance", "pos"), &EntityDrawer::set_new_pos);
 		ClassDB::bind_method(D_METHOD("get_old_pos", "instance"), &EntityDrawer::get_old_pos);
+		ClassDB::bind_method(D_METHOD("set_shader", "material"), &EntityDrawer::set_shader);
 
 		ClassDB::bind_method(D_METHOD("set_time_step", "time_step"), &EntityDrawer::set_time_step);
 
