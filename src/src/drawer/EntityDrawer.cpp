@@ -173,7 +173,7 @@ namespace godot
 		instance_l.current_animation = current_animation_p;
 		instance_l.next_animation = next_animation_p;
 		instance_l.frame_idx = 0;
-		instance_l.start = _elapsedTime;
+		instance_l.start = _elapsedAllTime;
 
 		init_handler(instance_l, _directionHandlers);
 	}
@@ -227,6 +227,7 @@ namespace godot
 	void EntityDrawer::_process(double delta_p)
 	{
 		_elapsedTime += delta_p;
+		_elapsedAllTime += delta_p;
 		queue_redraw();
 	}
 
@@ -240,7 +241,7 @@ namespace godot
 			{
 				double frameTime_l = instance_l.animation->get_frame_duration(cur_anim_l, instance_l.frame_idx) / instance_l.animation->get_animation_speed(cur_anim_l) ;
 				double nextFrameTime_l = instance_l.start + instance_l.frame_idx * frameTime_l;
-				if(_elapsedTime >= nextFrameTime_l)
+				if(_elapsedAllTime >= nextFrameTime_l)
 				{
 					++instance_l.frame_idx;
 				}
@@ -265,7 +266,7 @@ namespace godot
 						init_handler(instance_l, _directionHandlers);
 					}
 					instance_l.frame_idx = 0;
-					instance_l.start = _elapsedTime;
+					instance_l.start = _elapsedAllTime;
 				}
 				// if still enabled
 				if(instance_l.enabled)

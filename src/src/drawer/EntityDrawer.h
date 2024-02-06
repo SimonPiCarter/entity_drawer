@@ -94,7 +94,10 @@ private:
 	/// @brief expected duration of a timestep
 	double _timeStep = 0.01;
 
-	/// @brief time sine last position update
+	/// @brief time since beginning
+	double _elapsedAllTime = 0.;
+
+	/// @brief time since last position update
 	double _elapsedTime = 0.;
 };
 
