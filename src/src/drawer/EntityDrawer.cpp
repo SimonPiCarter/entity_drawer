@@ -293,6 +293,7 @@ namespace godot
 					if(instance_l.one_shot)
 					{
 						// free animation
+						RenderingServer::get_singleton()->canvas_item_clear(instance_l._canvas);
 						instance_l.enabled = false;
 						_freeIdx.push_back(i);
 						if(instance_l.handler >= 0)
