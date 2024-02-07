@@ -8,7 +8,7 @@ cmake_minimum_required (VERSION 3.14.0)
 # Project configuration
 # ============================================================================
 
-project (game
+project (entity_drawer
 	VERSION 0.1.0
 	LANGUAGES CXX)
 

@@ -96,7 +96,7 @@ namespace godot
 			{
 				dir_l = _oldPos[handler_l.instance] - _newPos[handler_l.instance];
 			}
-			if(dir_l.length_squared() > 0.1)
+			if(std::abs(dir_l.x) > 0.01 || std::abs(dir_l.y) > 0.01)
 			{
 				if(std::abs(dir_l.x) > std::abs(dir_l.y))
 				{
@@ -183,6 +183,7 @@ namespace godot
 		handler_l.names[DirectionHandler::DOWN] = StringName("down_"+instance_p.current_animation);
 		handler_l.names[DirectionHandler::LEFT] = StringName("left_"+instance_p.current_animation);
 		handler_l.names[DirectionHandler::RIGHT] = StringName("right_"+instance_p.current_animation);
+		handler_l.direction = Vector2(0,0);
 	}
 
 	void EntityDrawer::set_animation(int idx_p, StringName const &current_animation_p, StringName const &next_animation_p)
@@ -315,12 +316,13 @@ namespace godot
 				// if still enabled
 				if(instance_l.enabled)
 				{
-					Vector2 diff_l = _newPos[i] - _oldPos[i];
+					Vector2 diff_l = _oldPos[i] - _newPos[i];
 					Vector2 pos_l =  _oldPos[i] + diff_l * std::min<real_t>(1., real_t(_elapsedTime/_timeStep));
 					// draw animaton
 					Ref<Texture2D> texture_l = instance_l.animation->get_frame_texture(cur_anim_l, instance_l.frame_idx);
 					RenderingServer::get_singleton()->canvas_item_set_transform(instance_l._canvas, Transform2D(0., pos_l));
 					RenderingServer::get_singleton()->canvas_item_clear(instance_l._canvas);
+					instance_l._material->set_shader_parameter("uni_enabled", false);
 					texture_l->draw(instance_l._canvas, instance_l.offset);
 				}
 			}
