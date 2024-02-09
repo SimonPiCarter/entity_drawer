@@ -17,10 +17,10 @@ GameManager::~GameManager()
 	delete _controllerThread;
 }
 
-void GameManager::init()
+void GameManager::init(int number_p)
 {
 	UtilityFunctions::print("init");
-	std::list<octopus::Steppable *> spawners_l = TestLevel(_lib, 100);
+	std::list<octopus::Steppable *> spawners_l = TestLevel(_lib, number_p);
 
 	delete _controller;
 	_controller = new octopus::Controller(spawners_l, 0.01, {}, 5, 50);
@@ -99,7 +99,7 @@ void GameManager::_process(double delta)
 
 void GameManager::_bind_methods()
 {
-	ClassDB::bind_method(D_METHOD("init"), &GameManager::init);
+	ClassDB::bind_method(D_METHOD("init", "number"), &GameManager::init);
 	ClassDB::bind_method(D_METHOD("setEntityDrawer", "drawer"), &GameManager::setEntityDrawer);
 	ClassDB::bind_method(D_METHOD("getEntityDrawer"), &GameManager::getEntityDrawer);
 	ClassDB::bind_method(D_METHOD("setFramesLibrary", "library"), &GameManager::setFramesLibrary);

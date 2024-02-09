@@ -20,7 +20,7 @@ public:
 	~GameManager();
 
 	/// @brief initialize controller
-	void init();
+	void init(int number_p);
 
 	void loop();
 
