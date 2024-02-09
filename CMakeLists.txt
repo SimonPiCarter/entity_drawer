@@ -48,6 +48,7 @@ add_definitions(-DBOOST_ALLOW_DEPRECATED_HEADERS)
 # ============================================================================
 
 add_subdirectory(src/)
+add_subdirectory(exe/)
 
 # ============================================================================
 # Installation
