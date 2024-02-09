@@ -25,7 +25,7 @@ void applyVisitor(GameManager &manager_p, octopus::State const &state_p, octopus
 	vis_l(&step_p.getProjectileSpawnStep());
 	vis_l(&step_p.getProjectileMoveStep());
 
-	if(step_p.getId()+1 != state_p.getStepApplied())
+	if(step_p.getId()+1 == state_p.getStepApplied())
 	{
 		// update positions
 		for(octopus::Entity const *ent_l : state_p.getEntities())
