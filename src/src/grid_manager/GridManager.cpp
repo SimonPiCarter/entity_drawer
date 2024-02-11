@@ -69,7 +69,7 @@ void GridManager::loop()
 				{
 					ent &ent_l = _entities[i];
 					octopus::Vector pos_l(ent_l.pos.x, ent_l.pos.y);
-					octopus::Vector target_l(10,10);
+					octopus::Vector target_l(256,256);
 					octopus::Vector dir_l = target_l - pos_l;
 					octopus::Fixed length_l = octopus::length(dir_l);
 					if(length_l > 0.1)
