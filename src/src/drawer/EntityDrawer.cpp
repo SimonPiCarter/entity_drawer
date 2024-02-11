@@ -98,7 +98,7 @@ namespace godot
 			}
 			if(std::abs(dir_l.x) > 0.01 || std::abs(dir_l.y) > 0.01)
 			{
-				if(std::abs(dir_l.x) > std::abs(dir_l.y))
+				if(std::abs(dir_l.x) > std::abs(dir_l.y) || !handler_l.has_up_down)
 				{
 					if(dir_l.x > 0)
 					{
@@ -153,7 +153,7 @@ namespace godot
 	{
 		if(handler_p.type < 0)
 		{
-			return handler_p.names[0];
+			return handler_p.names[2];
 		}
 		return handler_p.names[handler_p.type];
 	}
@@ -221,7 +221,7 @@ namespace godot
 		_directionHandlers[instance_l.handler].direction = direction_p;
 	}
 
-	void EntityDrawer::add_direction_handler(int idx_p)
+	void EntityDrawer::add_direction_handler(int idx_p, bool has_up_down_p)
 	{
 		EntityInstance &instance_l = _instances[idx_p];
 		int idxHandler_l = -1;
@@ -230,6 +230,8 @@ namespace godot
 			idxHandler_l = int(_directionHandlers.size());
 			_directionHandlers.push_back(DirectionHandler());
 			_directionHandlers.back().instance = idx_p;
+			_directionHandlers.back().has_up_down = has_up_down_p;
+
 		}
 		else
 		{
@@ -237,6 +239,7 @@ namespace godot
 			_freeHandlersIdx.pop_front();
 			_directionHandlers[idx_l].direction = Vector2();
 			_directionHandlers[idx_l].type = -1;
+			_directionHandlers[idx_l].has_up_down = has_up_down_p;
 			_directionHandlers[idx_l].enabled = true;
 			_directionHandlers[idx_l].count = 0;
 			_directionHandlers[idx_l].instance = idx_p;
@@ -338,7 +341,7 @@ namespace godot
 		ClassDB::bind_method(D_METHOD("set_animation", "instance", "current_animation", "next_animation"), &EntityDrawer::set_animation);
 		ClassDB::bind_method(D_METHOD("set_animation_one_shot", "instance", "current_animation"), &EntityDrawer::set_animation_one_shot);
 		ClassDB::bind_method(D_METHOD("set_direction", "instance", "direction"), &EntityDrawer::set_direction);
-		ClassDB::bind_method(D_METHOD("add_direction_handler", "instance"), &EntityDrawer::add_direction_handler);
+		ClassDB::bind_method(D_METHOD("add_direction_handler", "instance", "has_up_down"), &EntityDrawer::add_direction_handler);
 		ClassDB::bind_method(D_METHOD("remove_direction_handler", "instance"), &EntityDrawer::remove_direction_handler);
 		ClassDB::bind_method(D_METHOD("set_new_pos", "instance", "pos"), &EntityDrawer::set_new_pos);
 		ClassDB::bind_method(D_METHOD("get_old_pos", "instance"), &EntityDrawer::get_old_pos);

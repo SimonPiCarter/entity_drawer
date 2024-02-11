@@ -54,6 +54,7 @@ struct DirectionHandler
 	std::array<StringName, 4> names;
 	/// @brief base name
 	StringName base_name;
+	bool has_up_down = true;
 
 	bool enabled = true;
 };
@@ -70,7 +71,7 @@ public:
 	void set_animation(int idx_p, StringName const &current_animation_p, StringName const &next_animation_p);
 	void set_animation_one_shot(int idx_p, StringName const &current_animation_p);
 	void set_direction(int idx_p, Vector2 const &direction_p);
-	void add_direction_handler(int idx_p);
+	void add_direction_handler(int idx_p, bool has_up_down_p);
 	void remove_direction_handler(int idx_p);
 	void set_new_pos(int idx_p, Vector2 const &pos_p);
 	Vector2 const & get_old_pos(int idx_p);

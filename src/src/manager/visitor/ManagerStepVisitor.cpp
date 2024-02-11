@@ -55,7 +55,7 @@ void ManagerStepVisitor::visit(octopus::UnitSpawnStep const *steppable_p)
 	// spawn unit
 	int idx_l = _manager.getEntityDrawer()->add_instance(32*Vector2(octopus::to_double(entity_l._pos.x), octopus::to_double(entity_l._pos.y)),
 		info_l.offset, info_l.sprite_frame, "run", "", false);
-	_manager.getEntityDrawer()->add_direction_handler(idx_l);
+	_manager.getEntityDrawer()->add_direction_handler(idx_l, info_l.has_up_down);
 }
 
 void ManagerStepVisitor::visit(octopus::CustomStep const *steppable_p)

@@ -13,13 +13,14 @@ struct FrameInfo
 {
 	Ref<SpriteFrames> sprite_frame;
 	Vector2 offset;
+	bool has_up_down = true;
 };
 
 class FramesLibrary : public Node {
 	GDCLASS(FramesLibrary, Node)
 
 public:
-	void addFrame(String const &name_p, Ref<SpriteFrames> const &frame_p, Vector2 const &offset_p);
+	void addFrame(String const &name_p, Ref<SpriteFrames> const &frame_p, Vector2 const &offset_p, bool has_up_down_p);
 
 	FrameInfo const & getFrameInfo(std::string const &name_p);
 
