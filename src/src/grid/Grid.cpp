@@ -8,7 +8,7 @@ void init(Grid &grid_p, size_t x, size_t y)
 	grid_p.y = y;
 }
 
-bool is_free(Grid &grid_p, size_t x, size_t y)
+bool is_free(Grid const &grid_p, size_t x, size_t y)
 {
 	return !grid_p.data[x*grid_p.y+y];
 }

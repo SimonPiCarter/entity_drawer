@@ -16,7 +16,6 @@ class GridManager : public Node2D {
 	GDCLASS(GridManager, Node2D)
 
 public:
-	GridManager() : _pool(12) {}
 	~GridManager();
 
 	/// @brief initialize controller
@@ -36,6 +35,9 @@ public:
 	void setFramesLibrary(FramesLibrary *lib_p);
 	FramesLibrary *getFramesLibrary() const;
 
+	// TEST/DEBUG method
+	void set_player(int x, int y, bool b);
+
 private:
 	std::thread * _controllerThread = nullptr;
 
@@ -45,9 +47,11 @@ private:
 	double _elapsed = 0.;
 
 	Grid _grid;
+	Grid _grid_player;
 	std::vector<ent> _entities;
+	ent _player;
 
-	ThreadPool _pool;
+	ThreadPool * _pool = nullptr;
 
 	EntityDrawer * _drawer = nullptr;
 	FramesLibrary * _framesLibrary = nullptr;

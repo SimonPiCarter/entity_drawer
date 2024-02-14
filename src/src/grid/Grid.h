@@ -11,6 +11,6 @@ struct Grid
 
 void init(Grid &grid_p, size_t x, size_t y);
 
-bool is_free(Grid &grid_p, size_t x, size_t y);
+bool is_free(Grid const &grid_p, size_t x, size_t y);
 
 void set(Grid &grid_p, size_t x, size_t y, bool set_p);

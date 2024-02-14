@@ -186,6 +186,12 @@ namespace godot
 		handler_l.direction = Vector2(0,0);
 	}
 
+	StringName const & EntityDrawer::get_animation(int idx_p) const
+	{
+		EntityInstance const &instance_l = _instances[idx_p];
+		return instance_l.current_animation;
+	}
+
 	void EntityDrawer::set_animation(int idx_p, StringName const &current_animation_p, StringName const &next_animation_p)
 	{
 		EntityInstance &instance_l = _instances[idx_p];

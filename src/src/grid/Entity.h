@@ -22,7 +22,10 @@ struct ent
 
 	vec pos = {50, 50};
 
-	bool apply_speed(Grid &grid_p, vec new_speed_p, bool final_p)
+	bool attacking = false;
+	bool running = false;
+
+	bool apply_speed(Grid const &grid_p, Grid &newGrid_p, vec new_speed_p, bool final_p)
 	{
 		vec new_pos = pos + new_speed_p;
 		long long one_l = octopus::Fixed::OneAsLong();
@@ -38,21 +41,21 @@ struct ent
 		}
 		else if(is_free(grid_p, new_x_l, new_y_l))
 		{
-			set(grid_p, old_x_l, old_y_l, false);
-			set(grid_p, new_x_l, new_y_l, true);
+			set(newGrid_p, old_x_l, old_y_l, false);
+			set(newGrid_p, new_x_l, new_y_l, true);
 			pos = new_pos;
 			return true;
 		}
 		else if(!final_p)
 		{
 			vec other_speed {new_speed_p.y, -new_speed_p.x};
-			return apply_speed(grid_p, other_speed, true);
+			return apply_speed(grid_p, newGrid_p, other_speed, true);
 		}
 		return false;
 	}
 
-	bool move(Grid &grid_p)
+	bool move(Grid const &grid_p, Grid &newGrid_p)
 	{
-		return apply_speed(grid_p, speed, false);
+		return apply_speed(grid_p, newGrid_p, speed, false);
 	}
 };

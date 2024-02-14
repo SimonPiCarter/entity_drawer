@@ -68,6 +68,7 @@ public:
 	int add_instance(Vector2 const &pos_p, Vector2 const &offset_p, Ref<SpriteFrames> const & animation_p,
 		StringName const &current_animation_p, StringName const &next_animation_p, bool one_shot_p);
 
+	StringName const & get_animation(int idx_p) const;
 	void set_animation(int idx_p, StringName const &current_animation_p, StringName const &next_animation_p);
 	void set_animation_one_shot(int idx_p, StringName const &current_animation_p);
 	void set_direction(int idx_p, Vector2 const &direction_p);

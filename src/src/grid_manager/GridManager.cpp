@@ -14,6 +14,7 @@ GridManager::~GridManager()
 {
 	_over = true;
 	delete _controllerThread;
+	delete _pool;
 }
 
 void GridManager::init(int number_p)
@@ -25,15 +26,19 @@ void GridManager::init(int number_p)
 	octopus::RandomGenerator gen_l(42);
 
 	::init(_grid, size_l, size_l);
+	::init(_grid_player, size_l, size_l);
 
 	FrameInfo const & info_l = _framesLibrary->getFrameInfo("test");
-	for(size_t i = 0 ; i < 15000; ++ i)
+	for(size_t i = 0 ; i < number_p; ++ i)
 	{
 		ent ent_l;
 		ent_l.pos.x = gen_l.roll_double(0, size_l-1);
 		ent_l.pos.y = gen_l.roll_double(0, size_l-1);
-		// ent_l.pos.x = 11+i;
-		// ent_l.pos.y = 11+i;
+
+		long long one_l = octopus::Fixed::OneAsLong();
+		long long pos_x_l = ent_l.pos.x.data() / one_l;
+		long long pos_y_l = ent_l.pos.y.data() / one_l;
+		::set(_grid, pos_x_l, pos_y_l, true);
 
 		_entities.push_back(ent_l);
 		// spawn unit
@@ -53,6 +58,10 @@ void GridManager::init(int number_p)
 void GridManager::loop()
 {
 	auto start{std::chrono::steady_clock::now()};
+
+	Grid newGrid_l;
+	::init(newGrid_l, _grid.x, _grid.y);
+
 	int idx_l = 0;
 	size_t step_l = _entities.size() / 12;
 	std::vector<std::function<void()>> jobs_l;
@@ -63,27 +72,81 @@ void GridManager::loop()
 		if(i==11) { e = _entities.size(); }
 
 		jobs_l.push_back(
-			[this, s, e]()
+			[this, s, e, &newGrid_l]()
 			{
 				for(size_t i = s ; i < e ; ++ i)
 				{
 					ent &ent_l = _entities[i];
+
+					bool move_l = false;
+					long long target_x_l = 0;
+					long long target_y_l = 0;
+					long long closest_l = 0;
+					long long one_l = octopus::Fixed::OneAsLong();
+					long long pos_x_l = ent_l.pos.x.data() / one_l;
+					long long pos_y_l = ent_l.pos.y.data() / one_l;
+					::set(newGrid_l, pos_x_l, pos_y_l, true);
+					long long r = 6;
+					for(long long x = std::max<long long>(0,pos_x_l-r) ; x < std::min<long long>(_grid.x-1,pos_x_l+r) ; ++ x)
+					{
+						for(long long y = std::max<long long>(0,pos_y_l-r) ; y < std::min<long long>(_grid.y-1,pos_y_l+r) ; ++ y)
+						{
+							if(!is_free(_grid_player, x, y))
+							{
+								long long dist_l = std::abs(x-pos_x_l) + std::abs(y-pos_y_l);
+								if(!move_l || dist_l < closest_l)
+								{
+									target_x_l = x;
+									target_y_l = y;
+									closest_l = dist_l;
+
+									move_l = true;
+								}
+							}
+						}
+					}
+
+					if(move_l && closest_l <= 2)
+					{
+						ent_l.attacking = true;
+						move_l = false;
+					}
+
+					if(ent_l.running && !move_l)
+					{
+						move_l = true;
+						target_x_l = _player.pos.x.data() / one_l;
+						target_y_l = _player.pos.y.data() / one_l;
+					}
+
+					if(!move_l)
+					{
+						continue;
+					}
+					ent_l.running = true;
+
 					octopus::Vector pos_l(ent_l.pos.x, ent_l.pos.y);
-					octopus::Vector target_l(256,256);
+					octopus::Vector target_l(target_x_l,target_y_l);
 					octopus::Vector dir_l = target_l - pos_l;
 					octopus::Fixed length_l = octopus::length(dir_l);
 					if(length_l > 0.1)
 					{
 						dir_l = (dir_l / length_l);
 						ent_l.speed = vec{0.2*octopus::to_double(dir_l.x), 0.2*octopus::to_double(dir_l.y)};
-						ent_l.move(_grid);
+						ent_l.move(_grid ,newGrid_l);
 					}
 				}
 			}
 		);
 	}
 
-	enqueue_and_wait(_pool, jobs_l);
+	if(!_pool)
+	{
+		_pool = new ThreadPool(12);
+	}
+	enqueue_and_wait(*_pool, jobs_l);
+
+	std::swap(_grid, newGrid_l);
 
     auto end{std::chrono::steady_clock::now()};
     std::chrono::duration<double> elapsed_seconds{end - start};
@@ -111,7 +174,13 @@ void GridManager::_process(double delta)
 			int idx_l = 0;
 			for(ent &ent_l : _entities)
 			{
-				_drawer->set_new_pos(idx_l++, 8*Vector2(octopus::to_double(ent_l.pos.x), octopus::to_double(ent_l.pos.y)));
+				if(ent_l.attacking && _drawer->get_animation(idx_l) != StringName("slash"))
+				{
+					_drawer->set_animation(idx_l, "slash", "run");
+					ent_l.attacking = false;
+				}
+				_drawer->set_new_pos(idx_l, 8*Vector2(octopus::to_double(ent_l.pos.x), octopus::to_double(ent_l.pos.y)));
+				++idx_l;
 			}
 			_drawer->update_pos();
 		}
@@ -119,7 +188,6 @@ void GridManager::_process(double delta)
 		// new loop
 		delete _controllerThread;
 		_controllerThread = new std::thread(&GridManager::loop, this);
-
 	}
 }
 
@@ -130,6 +198,9 @@ void GridManager::_bind_methods()
 	ClassDB::bind_method(D_METHOD("getEntityDrawer"), &GridManager::getEntityDrawer);
 	ClassDB::bind_method(D_METHOD("setFramesLibrary", "library"), &GridManager::setFramesLibrary);
 	ClassDB::bind_method(D_METHOD("getFramesLibrary"), &GridManager::getFramesLibrary);
+
+	// DEBUG
+	ClassDB::bind_method(D_METHOD("set_player", "x", "y", "b"), &GridManager::set_player);
 
 	ADD_GROUP("GridManager", "GridManager_");
 }
@@ -152,5 +223,15 @@ FramesLibrary *GridManager::getFramesLibrary() const
 {
 	return _framesLibrary;
 }
+
+
+// TEST/DEBUG method
+void GridManager::set_player(int x, int y, bool b)
+{
+	::set(_grid_player, x,y,b);
+	_player.pos.x = x;
+	_player.pos.y = y;
+}
+
 
 }
