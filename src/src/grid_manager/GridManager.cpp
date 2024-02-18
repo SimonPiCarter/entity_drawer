@@ -16,7 +16,8 @@
 #include "manager/components/Display.h"
 #include "manager/components/Resource.h"
 #include "manager/entities/Zombie.h"
-#include "manager/entities/ResourceNode.h"
+#include "manager/entities/ResourceEntity.h"
+#include "manager/entities/HarvesterEntity.h"
 
 namespace godot {
 
@@ -49,7 +50,8 @@ void GridManager::init(int number_p)
 	flecs::entity zombie_model = create_zombie_prefab(ecs);
 
 	flecs::entity tree_model = create_resource_node_prefab(ecs, "tree", "tree");
-	tree_model.set<Wood, Amount>({1});
+	tree_model.set<Wood, ResourceNode>(ResourceNode {1, flecs::entity()});
+	tree_model.set<Food, ResourceNode>(ResourceNode {1, flecs::entity()});
 
 	for(size_t i = 0 ; i < number_p; ++ i)
 	{
@@ -125,6 +127,8 @@ void GridManager::init(int number_p)
 			);
 		});
 
+	create_harvester_system(ecs, _timestamp, *_pool, _custom_steps);
+
     // destruct entities when hp < 0
     ecs.system<HitPoint const>()
         .multi_threaded()
@@ -178,6 +182,7 @@ void GridManager::init(int number_p)
 
 	/// APPLY
 	declare_apply_system(ecs, _steps, *_pool);
+	declare_apply_system(ecs, _custom_steps, *_pool);
 
 	// Create computation pipeline
 	_apply = ecs.pipeline()
@@ -326,6 +331,12 @@ void GridManager::set_player(int x, int y, bool b)
 	octopus::Position * pos_l = _player.mut(ecs).get_mut<octopus::Position>();
 	pos_l->vec.x = x;
 	pos_l->vec.y = y;
+
+	// if(b)
+	// {
+	// 	int32_t available_l = get_resource_amount_available<Wood>(_grid, x, y, 4);
+	// 	UtilityFunctions::print("wood : ", (int)available_l);
+	// }
 }
 
 

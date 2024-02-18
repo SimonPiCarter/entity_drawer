@@ -1,4 +1,4 @@
-#include "ResourceNode.h"
+#include "ResourceEntity.h"
 
 #include "octopus/components/basic/Position.hh"
 #include "manager/components/Display.h"

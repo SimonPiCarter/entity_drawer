@@ -8,6 +8,7 @@
 #include <mutex>
 #include "drawer/EntityDrawer.h"
 #include "manager/lib/frames/FramesLibrary.h"
+#include "manager/step/CustomStepContainer.h"
 
 #include "octopus/components/step/StepContainer.hh"
 #include "octopus/utils/Grid.hh"
@@ -53,6 +54,7 @@ private:
 	flecs::entity _player;
     int32_t _timestamp = 0;
 	std::vector<octopus::StepContainer> _steps;
+	std::vector<CustomStepContainer> _custom_steps;
 
 	std::vector<int> _destroyed_entities;
 	std::mutex _destroyed_entities_mutex;

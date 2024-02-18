@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "octopus/utils/Grid.hh"
 
 #include "octopus/components/basic/Attack.hh"
