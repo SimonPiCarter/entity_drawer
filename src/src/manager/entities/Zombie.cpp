@@ -11,7 +11,7 @@ flecs::entity create_zombie_prefab(flecs::world &ecs)
 		.set_override<Target>({flecs::entity(), 3})
 		.override<Attack>()
 		.override<Team>()
-		.override<HitPoint>()
+		.set_override<HitPoint>({50})
 		.override<Drawable>()
 		.set<DrawInfo>({"test"})
 		.add<Zombie>();

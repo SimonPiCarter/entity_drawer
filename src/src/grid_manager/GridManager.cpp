@@ -44,15 +44,7 @@ void GridManager::init(int number_p)
 
 	octopus::init(_grid, size_l, size_l);
 
-	flecs::entity zombie_model = ecs.prefab("zombie_model")
-		.override<Position>()
-		.set_override<Target>({flecs::entity(), 3})
-		.override<Attack>()
-		.override<Team>()
-		.override<HitPoint>()
-		.override<Drawable>()
-		.set<DrawInfo>({"test"})
-		.add<Zombie>();
+	flecs::entity zombie_model = create_zombie_prefab(ecs);
 
 	for(size_t i = 0 ; i < number_p; ++ i)
 	{
@@ -65,8 +57,7 @@ void GridManager::init(int number_p)
 		flecs::entity ent_l = ecs.entity(ss_l.str().c_str())
 			.is_a(zombie_model)
 			.set<Position>(pos)
-			.set<Team>({0})
-			.set<HitPoint>({50});
+			.set<Team>({int8_t(0)});
 		octopus::set(_grid, pos.vec.x.to_int(), pos.vec.y.to_int(), ent_l);
 
 		if(ent_l.has<DrawInfo>())
