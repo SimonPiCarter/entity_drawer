@@ -22,6 +22,7 @@ void zombie_routine(
     int32_t timestamp_p,
     flecs::entity e,
     octopus::Position const & p,
+    octopus::Speed const & speed,
     octopus::Target const& target,
     octopus::Team const &team,
     octopus::Attack const &a,

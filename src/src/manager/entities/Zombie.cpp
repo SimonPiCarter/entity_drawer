@@ -7,14 +7,15 @@ flecs::entity create_zombie_prefab(flecs::world &ecs)
 	using namespace octopus;
 
 	return ecs.prefab("zombie_model")
-		.override<Position>()
 		.set_override<Target>({flecs::entity(), 3})
+		.set_override<HitPoint>({50})
+		.override<Position>()
 		.override<Attack>()
 		.override<Team>()
-		.set_override<HitPoint>({50})
 		.override<Drawable>()
 		.override<SpawnTime>()
-		.set<DrawInfo>({"test"})
+		.set_override<Speed>({0.1})
+		.set<DrawInfo>({"ghoul"})
 		.add<Zombie>();
 }
 
@@ -24,6 +25,7 @@ void zombie_routine(
     int32_t timestamp_p,
     flecs::entity e,
     octopus::Position const & p,
+    octopus::Speed const & speed,
     octopus::Target const& target,
     octopus::Team const &team,
     octopus::Attack const &a,
@@ -65,7 +67,7 @@ void zombie_routine(
             if(a.state == octopus::AttackState::Idle && !in_range)
             {
                 diff /= length(diff);
-				diff *= p.speed;
+				diff *= speed.speed;
 				step.positions.add_step(e, octopus::PositionStep {diff});
             }
         }

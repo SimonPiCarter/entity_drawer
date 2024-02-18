@@ -51,7 +51,6 @@ void GridManager::init(int number_p)
 		std::stringstream ss_l;
 		ss_l<<"e"<<i;
 		Position pos;
-		pos.speed = 0.1;
 		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
 		pos.vec.y = gen_l.roll_double(0, double(size_l-1));
 		flecs::entity ent_l = ecs.entity(ss_l.str().c_str())
@@ -82,15 +81,15 @@ void GridManager::init(int number_p)
 	_drawer->set_time_step(0.1);
 
 	/// ITERATION
-	ecs.system<Position const, Target const, Team const, Attack const, SpawnTime const>()
+	ecs.system<Position const, Target const, Team const, Attack const, SpawnTime const, Speed const>()
 		.kind<Iteration>()
-		.iter([this](flecs::iter& it, Position const *pos, Target const *target, Team const *team, Attack const* attack, SpawnTime const* spawn) {
-			threading(it.count(), *_pool, [&it, &pos, &target, &team, &attack, &spawn, this](size_t t, size_t s, size_t e) {
+		.iter([this](flecs::iter& it, Position const *pos, Target const *target, Team const *team, Attack const* attack, SpawnTime const* spawn, Speed const *speed) {
+			threading(it.count(), *_pool, [&it, &pos, &target, &team, &attack, &spawn, &speed, this](size_t t, size_t s, size_t e) {
 				// set up memory
 				reserve(_steps[t], e-s);
 				for (size_t j = s; j < e; j ++) {
 					flecs::entity &ent = it.entity(j);
-					zombie_routine(_steps[t], _grid, _timestamp, ent, pos[j], target[j], team[j], attack[j], spawn[j]);
+					zombie_routine(_steps[t], _grid, _timestamp, ent, pos[j], speed[j], target[j], team[j], attack[j], spawn[j]);
 				}
 			}
 			);
@@ -139,7 +138,6 @@ void GridManager::init(int number_p)
 				}
 			}
 			);
-
         });
 
 	// Create computation pipeline
@@ -160,10 +158,10 @@ void GridManager::init(int number_p)
 
 	/// DISPLAY
 
-	ecs.system<Position const, Drawable const>()
+	ecs.system<Position const, Speed const, Drawable const>()
 		.multi_threaded()
         .kind<Display>()
-        .each([this](Position const &pos, Drawable const &drawable) {
+        .each([this](Position const &pos, Speed const &, Drawable const &drawable) {
 			_drawer->set_new_pos(drawable.idx, 8*Vector2(real_t(octopus::to_double(pos.vec.x)), real_t(octopus::to_double(pos.vec.y))));
 		});
 
