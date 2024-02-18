@@ -13,8 +13,10 @@
 #include <chrono>
 #include <sstream>
 
-#include "manager/entities/Zombie.h"
 #include "manager/components/Display.h"
+#include "manager/components/Resource.h"
+#include "manager/entities/Zombie.h"
+#include "manager/entities/ResourceNode.h"
 
 namespace godot {
 
@@ -45,6 +47,34 @@ void GridManager::init(int number_p)
 	octopus::init(_grid, size_l, size_l);
 
 	flecs::entity zombie_model = create_zombie_prefab(ecs);
+
+	flecs::entity tree_model = create_resource_node_prefab(ecs, "tree", "tree");
+	tree_model.set<Wood, Amount>({1});
+
+	for(size_t i = 0 ; i < number_p; ++ i)
+	{
+		std::stringstream ss_l;
+		ss_l<<"t"<<i;
+		Position pos;
+		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
+		pos.vec.y = gen_l.roll_double(0, double(size_l-1));
+		flecs::entity ent_l = ecs.entity(ss_l.str().c_str())
+			.is_a(tree_model)
+			.set<Position>(pos);
+		octopus::set(_grid, pos.vec.x.to_int(), pos.vec.y.to_int(), ent_l);
+
+		if(ent_l.has<DrawInfo>())
+		{
+			DrawInfo const *draw_info_l = ent_l.get<DrawInfo>();
+			FrameInfo const & info_l = _framesLibrary->getFrameInfo(draw_info_l->frame_id);
+
+			// spawn unit
+			int idx_l = _drawer->add_instance(8*Vector2(real_t(to_double(pos.vec.x)), real_t(to_double(pos.vec.y))),
+				info_l.offset, info_l.sprite_frame, "default", "", false);
+
+			ent_l.set<Drawable>({idx_l});
+		}
+	}
 
 	for(size_t i = 0 ; i < number_p; ++ i)
 	{
