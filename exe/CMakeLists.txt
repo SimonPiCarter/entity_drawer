@@ -10,4 +10,7 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX src FILES ${SOURCES})
 
 add_executable(grid ${SOURCES})
-target_include_directories(grid PUBLIC src)
+target_include_directories(grid PRIVATE src)
+target_link_libraries(grid PRIVATE octopus)
+
+install (TARGETS grid EXPORT ${PROJECT_NAME}-export)

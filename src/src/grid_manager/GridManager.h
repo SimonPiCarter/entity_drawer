@@ -4,11 +4,13 @@
 #include <godot_cpp/classes/node2d.hpp>
 
 #include <thread>
+#include <vector>
+#include <mutex>
 #include "drawer/EntityDrawer.h"
 #include "manager/lib/frames/FramesLibrary.h"
-#include "grid/Grid.h"
-#include "grid/Entity.h"
-#include "utils/ThreadPool.hh"
+
+#include "octopus/components/step/StepContainer.hh"
+#include "octopus/utils/Grid.hh"
 
 namespace godot {
 
@@ -46,12 +48,22 @@ private:
 	bool _init = false;
 	double _elapsed = 0.;
 
-	Grid _grid;
-	Grid _grid_player;
-	std::vector<ent> _entities;
-	ent _player;
+	octopus::Grid _grid;
+	flecs::world ecs;
+	std::vector<flecs::entity> _entities;
+	flecs::entity _player;
+    int32_t _timestamp = 0;
+	std::vector<octopus::StepContainer> _steps;
 
-	ThreadPool * _pool = nullptr;
+	std::vector<int> _destroyed_entities;
+	std::mutex _destroyed_entities_mutex;
+
+	// pipelines
+	flecs::entity _iteration;
+	flecs::entity _apply;
+	flecs::entity _display;
+
+	ThreadPool *_pool = nullptr;
 
 	EntityDrawer * _drawer = nullptr;
 	FramesLibrary * _framesLibrary = nullptr;

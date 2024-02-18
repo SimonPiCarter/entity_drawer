@@ -54,16 +54,14 @@ add_subdirectory(exe/)
 # Installation
 # ============================================================================
 
-# if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-# 	set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install/${PROJECT_NAME}-${PROJECT_VERSION}" CACHE PATH "${PROJECT_NAME} default install path" FORCE)
-# endif ()
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+	set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install/${PROJECT_NAME}-${PROJECT_VERSION}" CACHE PATH "${PROJECT_NAME} default install path" FORCE)
+endif ()
 
-# install (TARGETS entity_drawer EXPORT ${PROJECT_NAME}-export)
+set (ConfigPackageLocation "lib/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
 
-# set (ConfigPackageLocation "lib/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
-
-# install (EXPORT ${PROJECT_NAME}-export
-# 	FILE ${PROJECT_NAME}-targets.cmake
-# 	NAMESPACE ${PROJECT_NAME}::
-# 	DESTINATION "${ConfigPackageLocation}"
-# 	)
+install (EXPORT ${PROJECT_NAME}-export
+	FILE ${PROJECT_NAME}-targets.cmake
+	NAMESPACE ${PROJECT_NAME}::
+	DESTINATION "${ConfigPackageLocation}"
+	)

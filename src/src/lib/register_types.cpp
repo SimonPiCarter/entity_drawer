@@ -5,7 +5,6 @@
 
 #include "drawer/EntityDrawer.h"
 #include "grid_manager/GridManager.h"
-#include "manager/GameManager.h"
 #include "manager/lib/frames/FramesLibrary.h"
 
 void initialize_draw_entity_module(godot::ModuleInitializationLevel p_level) {
@@ -16,7 +15,6 @@ void initialize_draw_entity_module(godot::ModuleInitializationLevel p_level) {
   // REGISTER CLASSES HERE LATER
     godot::ClassDB::register_class<godot::EntityDrawer>();
     godot::ClassDB::register_class<godot::FramesLibrary>();
-    godot::ClassDB::register_class<godot::GameManager>();
     godot::ClassDB::register_class<godot::GridManager>();
 }
 

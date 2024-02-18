@@ -332,7 +332,12 @@ namespace godot
 					RenderingServer::get_singleton()->canvas_item_set_transform(instance_l._canvas, Transform2D(0., pos_l));
 					RenderingServer::get_singleton()->canvas_item_clear(instance_l._canvas);
 					// instance_l._material->set_shader_parameter("uni_enabled", false);
-					texture_l->draw(instance_l._canvas, instance_l.offset);
+
+					// required when empty texture in sprite frame
+					if(texture_l.is_valid())
+					{
+						texture_l->draw(instance_l._canvas, instance_l.offset);
+					}
 				}
 			}
 			++i;

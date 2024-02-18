@@ -2,144 +2,146 @@
 #include <chrono>
 #include <iostream>
 
-#include "grid/Grid.h"
+// #include "octopus/utils/Grid.hh"
 
-struct vec
-{
-	double x = 0;
-	double y = 0;
+// using namespace octopus;
 
-	vec operator+(vec const &other_p)
-	{
-		vec v {x,y};
-		v.x += other_p.x;
-		v.y += other_p.y;
-		return v;
-	}
-};
+// struct vec
+// {
+// 	double x = 0;
+// 	double y = 0;
 
-struct ent
-{
-	vec speed = {0.1,0.};
+// 	vec operator+(vec const &other_p)
+// 	{
+// 		vec v {x,y};
+// 		v.x += other_p.x;
+// 		v.y += other_p.y;
+// 		return v;
+// 	}
+// };
 
-	vec pos = {50, 50};
+// struct ent
+// {
+// 	vec speed = {0.1,0.};
 
-	bool move(Grid &grid_p)
-	{
-		vec new_pos = pos + speed;
-		if(size_t(new_pos.x) == size_t(pos.x) && size_t(new_pos.y) == size_t(pos.y))
-		{
-			pos = new_pos;
-			return true;
-		}
-		if(is_free(grid_p, size_t(new_pos.x), size_t(new_pos.y)))
-		{
-			set(grid_p, size_t(pos.x), size_t(pos.y), false);
-			set(grid_p, size_t(new_pos.x), size_t(new_pos.y), true);
-			pos = new_pos;
-			return true;
-		}
-		return false;
-	}
-};
+// 	vec pos = {50, 50};
 
-void test_ent_move()
-{
-	Grid grid_l;
-	size_t size_l = 2048;
-	size_t nb_l = 50000;
+// 	bool move(Grid &grid_p)
+// 	{
+// 		vec new_pos = pos + speed;
+// 		if(size_t(new_pos.x) == size_t(pos.x) && size_t(new_pos.y) == size_t(pos.y))
+// 		{
+// 			pos = new_pos;
+// 			return true;
+// 		}
+// 		if(is_free(grid_p, size_t(new_pos.x), size_t(new_pos.y)))
+// 		{
+// 			set(grid_p, size_t(pos.x), size_t(pos.y), false);
+// 			set(grid_p, size_t(new_pos.x), size_t(new_pos.y), true);
+// 			pos = new_pos;
+// 			return true;
+// 		}
+// 		return false;
+// 	}
+// };
 
-	init(grid_l, size_l, size_l);
+// void test_ent_move()
+// {
+// 	Grid grid_l;
+// 	size_t size_l = 2048;
+// 	size_t nb_l = 50000;
 
-	std::vector<ent> entities_l;
-	for(size_t i = 0 ; i < nb_l; ++ i)
-	{
-		ent ent_l;
-		ent_l.pos.x = double(i / size_l);
-		ent_l.pos.y = double(i - i / size_l);
-		entities_l.push_back(ent_l);
-	}
+// 	init(grid_l, size_l, size_l);
 
-	size_t stutter_l = 0;
+// 	std::vector<ent> entities_l;
+// 	for(size_t i = 0 ; i < nb_l; ++ i)
+// 	{
+// 		ent ent_l;
+// 		ent_l.pos.x = double(i / size_l);
+// 		ent_l.pos.y = double(i - i / size_l);
+// 		entities_l.push_back(ent_l);
+// 	}
 
-	auto start{std::chrono::steady_clock::now()};
-	for(size_t i = 0 ; i < 15000 ; ++ i)
-	{
-		for(ent &ent_l : entities_l)
-		{
-			if(!ent_l.move(grid_l)) stutter_l++;
-		}
-	}
-    auto end{std::chrono::steady_clock::now()};
-    std::chrono::duration<double> elapsed_seconds{end - start};
+// 	size_t stutter_l = 0;
 
-	std::cout << "move seq " << elapsed_seconds.count() << std::endl;
-	std::cout<<stutter_l<<std::endl;
-}
+// 	auto start{std::chrono::steady_clock::now()};
+// 	for(size_t i = 0 ; i < 15000 ; ++ i)
+// 	{
+// 		for(ent &ent_l : entities_l)
+// 		{
+// 			if(!ent_l.move(grid_l)) stutter_l++;
+// 		}
+// 	}
+//     auto end{std::chrono::steady_clock::now()};
+//     std::chrono::duration<double> elapsed_seconds{end - start};
 
-void test_bench()
-{
-	size_t size_l = 2048;
-	size_t nb_l = 50000;
+// 	std::cout << "move seq " << elapsed_seconds.count() << std::endl;
+// 	std::cout<<stutter_l<<std::endl;
+// }
 
-	auto start{std::chrono::steady_clock::now()};
+// void test_bench()
+// {
+// 	size_t size_l = 2048;
+// 	size_t nb_l = 50000;
 
-	Grid grid_l;
+// 	auto start{std::chrono::steady_clock::now()};
 
-	init(grid_l, size_l, size_l);
+// 	Grid grid_l;
 
-    auto end{std::chrono::steady_clock::now()};
-    std::chrono::duration<double> elapsed_seconds{end - start};
+// 	init(grid_l, size_l, size_l);
 
-	std::cout << "init " << elapsed_seconds.count() << std::endl;
+//     auto end{std::chrono::steady_clock::now()};
+//     std::chrono::duration<double> elapsed_seconds{end - start};
 
-	start = std::chrono::steady_clock::now();
+// 	std::cout << "init " << elapsed_seconds.count() << std::endl;
 
-	for(size_t i = 0 ; i < nb_l; ++ i)
-	{
-		set(grid_l, i%size_l, i%size_l, true);
-	}
+// 	start = std::chrono::steady_clock::now();
 
-	end = std::chrono::steady_clock::now();
+// 	for(size_t i = 0 ; i < nb_l; ++ i)
+// 	{
+// 		set(grid_l, i%size_l, i%size_l, true);
+// 	}
 
-	elapsed_seconds = end - start;
+// 	end = std::chrono::steady_clock::now();
 
-	std::cout << "set " << nb_l << " : " << elapsed_seconds.count() << std::endl;
+// 	elapsed_seconds = end - start;
 
-	start = std::chrono::steady_clock::now();
+// 	std::cout << "set " << nb_l << " : " << elapsed_seconds.count() << std::endl;
 
-	for(size_t i = 0 ; i < nb_l; ++ i)
-	{
-		set(grid_l, i%size_l, i%size_l, false);
-		set(grid_l, i%size_l+1, i%size_l, true);
-	}
+// 	start = std::chrono::steady_clock::now();
 
-	end = std::chrono::steady_clock::now();
+// 	for(size_t i = 0 ; i < nb_l; ++ i)
+// 	{
+// 		set(grid_l, i%size_l, i%size_l, false);
+// 		set(grid_l, i%size_l+1, i%size_l, true);
+// 	}
 
-	elapsed_seconds = end - start;
+// 	end = std::chrono::steady_clock::now();
 
-	std::cout << "move x " << nb_l << " : " << elapsed_seconds.count() << std::endl;
+// 	elapsed_seconds = end - start;
 
-	start = std::chrono::steady_clock::now();
+// 	std::cout << "move x " << nb_l << " : " << elapsed_seconds.count() << std::endl;
 
-	for(size_t i = 0 ; i < nb_l; ++ i)
-	{
-		set(grid_l, i%size_l+1, i%size_l, false);
-		set(grid_l, i%size_l+1, i%size_l+1, true);
-	}
+// 	start = std::chrono::steady_clock::now();
 
-	end = std::chrono::steady_clock::now();
+// 	for(size_t i = 0 ; i < nb_l; ++ i)
+// 	{
+// 		set(grid_l, i%size_l+1, i%size_l, false);
+// 		set(grid_l, i%size_l+1, i%size_l+1, true);
+// 	}
 
-	elapsed_seconds = end - start;
+// 	end = std::chrono::steady_clock::now();
 
-	std::cout << "move y " << nb_l << " : " << elapsed_seconds.count() << std::endl;
+// 	elapsed_seconds = end - start;
 
-}
+// 	std::cout << "move y " << nb_l << " : " << elapsed_seconds.count() << std::endl;
+
+// }
 
 int main()
 {
 	// test_bench();
-	test_ent_move();
+	// test_ent_move();
 
 	return 0;
 }

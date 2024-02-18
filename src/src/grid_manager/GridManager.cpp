@@ -2,12 +2,94 @@
 
 #include <godot_cpp/variant/utility_functions.hpp>
 
-#include "utils/RandomGenerator.hh"
-#include "utils/Vector.hh"
+#include "octopus/utils/RandomGenerator.hh"
+#include "octopus/utils/Vector.hh"
+#include "octopus/components/basic/Attack.hh"
+#include "octopus/components/basic/Position.hh"
+#include "octopus/components/basic/HitPoint.hh"
+#include "octopus/components/basic/Team.hh"
+#include "octopus/components/behaviour/target/Target.hh"
 
 #include <chrono>
+#include <sstream>
 
 namespace godot {
+
+
+struct Display {};
+struct Drawable { int idx = 0;};
+struct Zombie {};
+
+void zombie(
+	octopus::StepContainer &step,
+    octopus::Grid const &grid_p,
+    int32_t timestamp_p,
+    flecs::entity e,
+    octopus::Position const & p,
+    octopus::Target const& target,
+    octopus::Team const &team,
+    octopus::Attack const &a
+)
+{
+    // aquire target
+    octopus::target_system(step, grid_p, e, p, target, team);
+
+    if(target.data.target)
+    {
+        octopus::Position const *target_pos = target.data.target.get<octopus::Position>();
+        if(target_pos)
+        {
+            octopus::Vector diff = target_pos->vec - p.vec;
+            /// @todo use range and size of entity
+            bool in_range = square_length(diff) < 2;
+            // if in range or already started prepare attack
+            if((a.state == octopus::AttackState::Idle && in_range)
+            || a.state != octopus::AttackState::Idle)
+            {
+                octopus::attack_system(step, timestamp_p, e, a);
+            }
+
+            // if we just ended wind up
+            if(timestamp_p == a.data.winddown_timestamp+1)
+            {
+                // deal damage
+                octopus::HitPoint const *hp_target = target.data.target.get<octopus::HitPoint>();
+				step.hitpoints.add_step(target.data.target, octopus::HitPointStep {-10});
+            }
+
+            // if not in wind up/down
+            if(a.state == octopus::AttackState::Idle && !in_range)
+            {
+                diff /= length(diff);
+				diff *= p.speed;
+				step.positions.add_step(e, octopus::PositionStep {diff});
+            }
+        }
+    }
+}
+
+void threading(size_t size, ThreadPool &pool, std::function<void(size_t, size_t, size_t)> &&func)
+{
+	size_t step_l = size / pool.size();
+	std::vector<std::function<void()>> jobs_l;
+
+	for(size_t i = 0 ; i < pool.size() ; ++ i)
+	{
+		size_t s = step_l*i;
+		size_t e = step_l*(i+1);
+		if(i==pool.size()-1) { e = size; }
+
+		jobs_l.push_back(
+			[i, s, e, &func]()
+			{
+				func(i, s, e);
+			}
+		);
+	}
+
+	enqueue_and_wait(pool, jobs_l);
+}
+
 
 
 GridManager::~GridManager()
@@ -19,35 +101,159 @@ GridManager::~GridManager()
 
 void GridManager::init(int number_p)
 {
+	using namespace octopus;
+
 	UtilityFunctions::print("init");
+
+	delete _pool;
+	uint32_t nb_threads_l = 12;
+	_pool = new ThreadPool(nb_threads_l);
+	ecs.set_threads(nb_threads_l);
+	_steps.clear();
+	_steps.resize(_pool->size(), StepContainer());
 
 	size_t size_l = 512;
 
-	octopus::RandomGenerator gen_l(42);
+	RandomGenerator gen_l(42);
 
-	::init(_grid, size_l, size_l);
-	::init(_grid_player, size_l, size_l);
+	octopus::init(_grid, size_l, size_l);
 
 	FrameInfo const & info_l = _framesLibrary->getFrameInfo("test");
 	for(size_t i = 0 ; i < number_p; ++ i)
 	{
-		ent ent_l;
-		ent_l.pos.x = gen_l.roll_double(0, size_l-1);
-		ent_l.pos.y = gen_l.roll_double(0, size_l-1);
+		std::stringstream ss_l;
+		ss_l<<"e"<<i;
+		Position pos;
+		pos.speed = 0.2;
+		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
+		pos.vec.y = gen_l.roll_double(0, double(size_l-1));
+		flecs::entity ent_l = ecs.entity(ss_l.str().c_str())
+			.set<Position>(pos)
+			.add<Target>()
+			.add<Attack>()
+			.set<Team>({0})
+			.set<HitPoint>({50})
+			.add<Zombie>();
 
-		long long one_l = octopus::Fixed::OneAsLong();
-		long long pos_x_l = ent_l.pos.x.data() / one_l;
-		long long pos_y_l = ent_l.pos.y.data() / one_l;
-		::set(_grid, pos_x_l, pos_y_l, true);
+		octopus::set(_grid, pos.vec.x.to_int(), pos.vec.y.to_int(), ent_l);
 
 		_entities.push_back(ent_l);
 		// spawn unit
-		int idx_l = _drawer->add_instance(8*Vector2(octopus::to_double(ent_l.pos.x), octopus::to_double(ent_l.pos.y)),
+		int idx_l = _drawer->add_instance(8*Vector2(real_t(to_double(pos.vec.x)), real_t(to_double(pos.vec.y))),
 			info_l.offset, info_l.sprite_frame, "run", "", false);
 		_drawer->add_direction_handler(idx_l, info_l.has_up_down);
+
+		ent_l.set<Drawable>({idx_l});
 	}
 
+	_player = ecs.entity("player")
+		.add<Position>()
+		.set<HitPoint>({500000})
+		.set<Team>({1});
+
 	_drawer->set_time_step(0.1);
+
+	/// ITERATION
+	ecs.system<Position const, Target const, Team const, Attack const>()
+		.kind<Iteration>()
+		.iter([this](flecs::iter& it, Position const *pos, Target const *target, Team const *team, Attack const* attack) {
+			threading(it.count(), *_pool, [&it, &pos, &target, &team, &attack, this](size_t t, size_t s, size_t e) {
+				// set up memory
+				reserve(_steps[t], e-s);
+				for (size_t j = s; j < e; j ++) {
+					flecs::entity &ent = it.entity(j);
+					zombie(_steps[t], _grid, _timestamp, ent, pos[j], target[j], team[j], attack[j]);
+				}
+			}
+			);
+		});
+
+    // destruct entities when hp < 0
+    ecs.system<HitPoint const>()
+        .multi_threaded()
+        .kind<Iteration>()
+        .each([this](flecs::entity e, HitPoint const &hp) {
+            if(hp.hp <= 0)
+            {
+                // free grid if necessary
+                if(e.has<Position>())
+                {
+                    const Position * pos_l = e.get<Position>();
+                    size_t x = size_t(pos_l->vec.x.to_int());
+                    size_t y = size_t(pos_l->vec.y.to_int());
+                    octopus::set(_grid, x, y, flecs::entity());
+                }
+
+                if(e.has<Drawable>())
+                {
+                    const Drawable * d_l = e.get<Drawable>();
+					std::lock_guard lock_l(_destroyed_entities_mutex);
+					_destroyed_entities.push_back(d_l->idx);
+				}
+                e.destruct();
+            }
+        });
+
+    // move computation
+    ecs.system()
+        .kind<Iteration>()
+        .iter([this](flecs::iter it) {
+			threading(_steps.size(), *_pool, [this](size_t t, size_t, size_t) {
+				for (StepPair<PositionMemento> &pair : _steps[t].positions.steps) {
+					StepPair<PositionMemento> &pair2 = pair;
+					flecs::entity &ent = pair.data.entity();
+					// maye have been destroyed
+					if(ent)
+					{
+						Position const * pos = pair.data.try_get();
+						position_system(_grid, ent, *pos, pair.step);
+					}
+				}
+			}
+			);
+
+        });
+
+	// Create computation pipeline
+	_iteration = ecs.pipeline()
+		.with(flecs::System)
+		.with<Iteration>()
+		.build();
+
+	/// APPLY
+	declare_apply_system(ecs, _steps, *_pool);
+
+	// Create computation pipeline
+	_apply = ecs.pipeline()
+		.with(flecs::System)
+		.with<Apply>()
+		.build();
+
+
+	/// DISPLAY
+
+	ecs.system<Position const, Drawable const>()
+		.multi_threaded()
+        .kind<Display>()
+        .each([this](Position const &pos, Drawable const &drawable) {
+			_drawer->set_new_pos(drawable.idx, 8*Vector2(real_t(octopus::to_double(pos.vec.x)), real_t(octopus::to_double(pos.vec.y))));
+		});
+
+	ecs.system<Attack const, Drawable const>()
+		.multi_threaded()
+        .kind<Display>()
+        .each([this](Attack const &attack, Drawable const &drawable) {
+			if(_timestamp == attack.data.windup_timestamp+1 && _drawer->get_animation(drawable.idx) != StringName("slash"))
+			{
+				_drawer->set_animation(drawable.idx, "slash", "run");
+			}
+		});
+
+	// Create computation pipeline
+	_display = ecs.pipeline()
+		.with(flecs::System)
+		.with<Display>()
+		.build();
 
 	UtilityFunctions::print("done");
 	_init = true;
@@ -59,99 +265,21 @@ void GridManager::loop()
 {
 	auto start{std::chrono::steady_clock::now()};
 
-	Grid newGrid_l;
-	::init(newGrid_l, _grid.x, _grid.y);
+	ecs.set_pipeline(_iteration);
+	ecs.progress();
 
-	int idx_l = 0;
-	size_t step_l = _entities.size() / 12;
-	std::vector<std::function<void()>> jobs_l;
-	for(size_t i = 0 ; i < 12 ; ++ i)
+	ecs.set_pipeline(_apply);
+	ecs.progress();
+
+	for(octopus::StepContainer &container_l : _steps)
 	{
-		size_t s = step_l*i;
-		size_t e = step_l*(i+1);
-		if(i==11) { e = _entities.size(); }
-
-		jobs_l.push_back(
-			[this, s, e, &newGrid_l]()
-			{
-				for(size_t i = s ; i < e ; ++ i)
-				{
-					ent &ent_l = _entities[i];
-
-					bool move_l = false;
-					long long target_x_l = 0;
-					long long target_y_l = 0;
-					long long closest_l = 0;
-					long long one_l = octopus::Fixed::OneAsLong();
-					long long pos_x_l = ent_l.pos.x.data() / one_l;
-					long long pos_y_l = ent_l.pos.y.data() / one_l;
-					::set(newGrid_l, pos_x_l, pos_y_l, true);
-					long long r = 6;
-					for(long long x = std::max<long long>(0,pos_x_l-r) ; x < std::min<long long>(_grid.x-1,pos_x_l+r) ; ++ x)
-					{
-						for(long long y = std::max<long long>(0,pos_y_l-r) ; y < std::min<long long>(_grid.y-1,pos_y_l+r) ; ++ y)
-						{
-							if(!is_free(_grid_player, x, y))
-							{
-								long long dist_l = std::abs(x-pos_x_l) + std::abs(y-pos_y_l);
-								if(!move_l || dist_l < closest_l)
-								{
-									target_x_l = x;
-									target_y_l = y;
-									closest_l = dist_l;
-
-									move_l = true;
-								}
-							}
-						}
-					}
-
-					if(move_l && closest_l <= 2)
-					{
-						ent_l.attacking = true;
-						move_l = false;
-					}
-
-					if(ent_l.running && !move_l)
-					{
-						move_l = true;
-						target_x_l = _player.pos.x.data() / one_l;
-						target_y_l = _player.pos.y.data() / one_l;
-					}
-
-					if(!move_l)
-					{
-						continue;
-					}
-					ent_l.running = true;
-
-					octopus::Vector pos_l(ent_l.pos.x, ent_l.pos.y);
-					octopus::Vector target_l(target_x_l,target_y_l);
-					octopus::Vector dir_l = target_l - pos_l;
-					octopus::Fixed length_l = octopus::length(dir_l);
-					if(length_l > 0.1)
-					{
-						dir_l = (dir_l / length_l);
-						ent_l.speed = vec{0.2*octopus::to_double(dir_l.x), 0.2*octopus::to_double(dir_l.y)};
-						ent_l.move(_grid ,newGrid_l);
-					}
-				}
-			}
-		);
+		octopus::clear_container(container_l);
 	}
-
-	if(!_pool)
-	{
-		_pool = new ThreadPool(12);
-	}
-	enqueue_and_wait(*_pool, jobs_l);
-
-	std::swap(_grid, newGrid_l);
 
     auto end{std::chrono::steady_clock::now()};
-    std::chrono::duration<double> elapsed_seconds{end - start};
+    std::chrono::duration<double> diff = end - start;
 
-	UtilityFunctions::print("move seq ", elapsed_seconds.count());
+	UtilityFunctions::print("total ", diff.count()*1000.);
 }
 
 void GridManager::_process(double delta)
@@ -171,17 +299,18 @@ void GridManager::_process(double delta)
 		if(_controllerThread)
 		{
 			_controllerThread->join();
-			int idx_l = 0;
-			for(ent &ent_l : _entities)
+			++_timestamp;
+
+			ecs.set_pipeline(_display);
+			ecs.progress();
+
+			for(int idx : _destroyed_entities)
 			{
-				if(ent_l.attacking && _drawer->get_animation(idx_l) != StringName("slash"))
-				{
-					_drawer->set_animation(idx_l, "slash", "run");
-					ent_l.attacking = false;
-				}
-				_drawer->set_new_pos(idx_l, 8*Vector2(octopus::to_double(ent_l.pos.x), octopus::to_double(ent_l.pos.y)));
-				++idx_l;
+				_drawer->remove_direction_handler(idx);
+				_drawer->set_animation_one_shot(idx, "death");
 			}
+			_destroyed_entities.clear();
+
 			_drawer->update_pos();
 		}
 
@@ -228,9 +357,19 @@ FramesLibrary *GridManager::getFramesLibrary() const
 // TEST/DEBUG method
 void GridManager::set_player(int x, int y, bool b)
 {
-	::set(_grid_player, x,y,b);
-	_player.pos.x = x;
-	_player.pos.y = y;
+	flecs::entity ent_l = octopus::get(_grid, x, y);
+	if(!b && ent_l == _player)
+	{
+		octopus::set(_grid, x, y, flecs::entity());
+	}
+
+	if(b && !ent_l)
+	{
+		octopus::set(_grid, x, y, _player);
+	}
+	octopus::Position * pos_l = _player.mut(ecs).get_mut<octopus::Position>();
+	pos_l->vec.x = x;
+	pos_l->vec.y = y;
 }
 
 
