@@ -50,7 +50,6 @@ private:
 
 	octopus::Grid _grid;
 	flecs::world ecs;
-	std::vector<flecs::entity> _entities;
 	flecs::entity _player;
     int32_t _timestamp = 0;
 	std::vector<octopus::StepContainer> _steps;

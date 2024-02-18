@@ -13,60 +13,10 @@
 #include <chrono>
 #include <sstream>
 
+#include "manager/entities/Zombie.h"
+#include "manager/components/Display.h"
+
 namespace godot {
-
-
-struct Display {};
-struct Drawable { int idx = 0;};
-struct Zombie {};
-
-void zombie(
-	octopus::StepContainer &step,
-    octopus::Grid const &grid_p,
-    int32_t timestamp_p,
-    flecs::entity e,
-    octopus::Position const & p,
-    octopus::Target const& target,
-    octopus::Team const &team,
-    octopus::Attack const &a
-)
-{
-    // aquire target
-    octopus::target_system(step, grid_p, e, p, target, team);
-
-    if(target.data.target)
-    {
-        octopus::Position const *target_pos = target.data.target.get<octopus::Position>();
-        if(target_pos)
-        {
-            octopus::Vector diff = target_pos->vec - p.vec;
-            /// @todo use range and size of entity
-            bool in_range = square_length(diff) < 2;
-            // if in range or already started prepare attack
-            if((a.state == octopus::AttackState::Idle && in_range)
-            || a.state != octopus::AttackState::Idle)
-            {
-                octopus::attack_system(step, timestamp_p, e, a);
-            }
-
-            // if we just ended wind up
-            if(timestamp_p == a.data.winddown_timestamp+1)
-            {
-                // deal damage
-                octopus::HitPoint const *hp_target = target.data.target.get<octopus::HitPoint>();
-				step.hitpoints.add_step(target.data.target, octopus::HitPointStep {-10});
-            }
-
-            // if not in wind up/down
-            if(a.state == octopus::AttackState::Idle && !in_range)
-            {
-                diff /= length(diff);
-				diff *= p.speed;
-				step.positions.add_step(e, octopus::PositionStep {diff});
-            }
-        }
-    }
-}
 
 void threading(size_t size, ThreadPool &pool, std::function<void(size_t, size_t, size_t)> &&func)
 {
@@ -89,8 +39,6 @@ void threading(size_t size, ThreadPool &pool, std::function<void(size_t, size_t,
 
 	enqueue_and_wait(pool, jobs_l);
 }
-
-
 
 GridManager::~GridManager()
 {
@@ -118,32 +66,43 @@ void GridManager::init(int number_p)
 
 	octopus::init(_grid, size_l, size_l);
 
-	FrameInfo const & info_l = _framesLibrary->getFrameInfo("test");
+	flecs::entity zombie_model = ecs.prefab("zombie_model")
+		.override<Position>()
+		.set_override<Target>({flecs::entity(), 3})
+		.override<Attack>()
+		.override<Team>()
+		.override<HitPoint>()
+		.override<Drawable>()
+		.set<DrawInfo>({"test"})
+		.add<Zombie>();
+
 	for(size_t i = 0 ; i < number_p; ++ i)
 	{
 		std::stringstream ss_l;
 		ss_l<<"e"<<i;
 		Position pos;
-		pos.speed = 0.2;
+		pos.speed = 0.1;
 		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
 		pos.vec.y = gen_l.roll_double(0, double(size_l-1));
 		flecs::entity ent_l = ecs.entity(ss_l.str().c_str())
+			.is_a(zombie_model)
 			.set<Position>(pos)
-			.add<Target>()
-			.add<Attack>()
 			.set<Team>({0})
-			.set<HitPoint>({50})
-			.add<Zombie>();
-
+			.set<HitPoint>({50});
 		octopus::set(_grid, pos.vec.x.to_int(), pos.vec.y.to_int(), ent_l);
 
-		_entities.push_back(ent_l);
-		// spawn unit
-		int idx_l = _drawer->add_instance(8*Vector2(real_t(to_double(pos.vec.x)), real_t(to_double(pos.vec.y))),
-			info_l.offset, info_l.sprite_frame, "run", "", false);
-		_drawer->add_direction_handler(idx_l, info_l.has_up_down);
+		if(ent_l.has<DrawInfo>())
+		{
+			DrawInfo const *draw_info_l = ent_l.get<DrawInfo>();
+			FrameInfo const & info_l = _framesLibrary->getFrameInfo(draw_info_l->frame_id);
 
-		ent_l.set<Drawable>({idx_l});
+			// spawn unit
+			int idx_l = _drawer->add_instance(8*Vector2(real_t(to_double(pos.vec.x)), real_t(to_double(pos.vec.y))),
+				info_l.offset, info_l.sprite_frame, "run", "", false);
+			_drawer->add_direction_handler(idx_l, info_l.has_up_down);
+
+			ent_l.set<Drawable>({idx_l});
+		}
 	}
 
 	_player = ecs.entity("player")
@@ -162,7 +121,7 @@ void GridManager::init(int number_p)
 				reserve(_steps[t], e-s);
 				for (size_t j = s; j < e; j ++) {
 					flecs::entity &ent = it.entity(j);
-					zombie(_steps[t], _grid, _timestamp, ent, pos[j], target[j], team[j], attack[j]);
+					zombie_routine(_steps[t], _grid, _timestamp, ent, pos[j], target[j], team[j], attack[j]);
 				}
 			}
 			);
