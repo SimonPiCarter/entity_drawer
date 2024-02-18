@@ -13,6 +13,7 @@ flecs::entity create_zombie_prefab(flecs::world &ecs)
 		.override<Team>()
 		.set_override<HitPoint>({50})
 		.override<Drawable>()
+		.override<SpawnTime>()
 		.set<DrawInfo>({"test"})
 		.add<Zombie>();
 }
@@ -25,9 +26,15 @@ void zombie_routine(
     octopus::Position const & p,
     octopus::Target const& target,
     octopus::Team const &team,
-    octopus::Attack const &a
+    octopus::Attack const &a,
+    SpawnTime const &spawn_time
 )
 {
+	// let spawn time happen
+	if(timestamp_p < spawn_time.spawn_timestamp + spawn_time.spawn_time)
+	{
+		return;
+	}
     // aquire target
     octopus::target_system(step, grid_p, e, p, target, team);
 

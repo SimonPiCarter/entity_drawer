@@ -10,6 +10,8 @@
 #include "octopus/components/behaviour/target/Target.hh"
 #include "octopus/components/step/StepContainer.hh"
 
+#include "manager/components/SpawnTime.h"
+
 struct Zombie {};
 
 flecs::entity create_zombie_prefab(flecs::world &ecs);
@@ -22,5 +24,6 @@ void zombie_routine(
     octopus::Position const & p,
     octopus::Target const& target,
     octopus::Team const &team,
-    octopus::Attack const &a
+    octopus::Attack const &a,
+    SpawnTime const &spawn_time
 );

@@ -67,7 +67,7 @@ void GridManager::init(int number_p)
 
 			// spawn unit
 			int idx_l = _drawer->add_instance(8*Vector2(real_t(to_double(pos.vec.x)), real_t(to_double(pos.vec.y))),
-				info_l.offset, info_l.sprite_frame, "run", "", false);
+				info_l.offset, info_l.sprite_frame, "spawn", "run", false);
 			_drawer->add_direction_handler(idx_l, info_l.has_up_down);
 
 			ent_l.set<Drawable>({idx_l});
@@ -82,15 +82,15 @@ void GridManager::init(int number_p)
 	_drawer->set_time_step(0.1);
 
 	/// ITERATION
-	ecs.system<Position const, Target const, Team const, Attack const>()
+	ecs.system<Position const, Target const, Team const, Attack const, SpawnTime const>()
 		.kind<Iteration>()
-		.iter([this](flecs::iter& it, Position const *pos, Target const *target, Team const *team, Attack const* attack) {
-			threading(it.count(), *_pool, [&it, &pos, &target, &team, &attack, this](size_t t, size_t s, size_t e) {
+		.iter([this](flecs::iter& it, Position const *pos, Target const *target, Team const *team, Attack const* attack, SpawnTime const* spawn) {
+			threading(it.count(), *_pool, [&it, &pos, &target, &team, &attack, &spawn, this](size_t t, size_t s, size_t e) {
 				// set up memory
 				reserve(_steps[t], e-s);
 				for (size_t j = s; j < e; j ++) {
 					flecs::entity &ent = it.entity(j);
-					zombie_routine(_steps[t], _grid, _timestamp, ent, pos[j], target[j], team[j], attack[j]);
+					zombie_routine(_steps[t], _grid, _timestamp, ent, pos[j], target[j], team[j], attack[j], spawn[j]);
 				}
 			}
 			);
