@@ -8,7 +8,7 @@
 #include "manager/components/Display.h"
 #include "manager/step/CustomStepContainer.h"
 
-flecs::entity create_harvester_prefab(flecs::world &ecs, std::string const &name_p, std::string const &frame_id, HarvesterStatic const &static_p)
+flecs::entity create_harvester_prefab(flecs::world &ecs, std::string const &name_p, std::string const &frame_id)
 {
 	using namespace octopus;
 
@@ -18,7 +18,7 @@ flecs::entity create_harvester_prefab(flecs::world &ecs, std::string const &name
 		.override<Team>()
 		.override<Drawable>()
 		.override<Harvester>()
-		.set<HarvesterStatic>(static_p)
+		.override<HarvesterStatic>(static_p)
 		.set<DrawInfo>({frame_id});
 }
 
