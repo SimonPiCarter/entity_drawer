@@ -119,7 +119,7 @@ void GridManager::init(int number_p)
 		});
 	}
 
-	for(size_t i = 0 ; i < 0; ++ i)
+	for(size_t i = 0 ; i < number_p; ++ i)
 	{
 		Position pos;
 		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
