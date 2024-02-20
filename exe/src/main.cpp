@@ -138,10 +138,65 @@
 
 // }
 
+#include "flecs.h"
+
+struct Food {};
+struct Wood {};
+
+// enum Type {
+// 	Food,
+// 	Wood
+// };
+struct Harvest { int qty; };
+struct Store { int qty; };
+
 int main()
 {
 	// test_bench();
 	// test_ent_move();
+
+	flecs::world ecs;
+
+	auto ent1 = ecs.entity("e1")
+		.set<Harvest, Food>({10})
+		.set<Harvest, Wood>({10});
+
+	auto ent2 = ecs.entity("e2")
+		.set<Harvest, Wood>({10});
+
+	auto ent3 = ecs.entity("store_food")
+		.set<Food, Store>({0})
+		.set<Wood, Store>({0});
+
+	ecs.system<Harvest>()
+	.term_at(1).second(flecs::Wildcard)
+    // Iterate the query with a flecs::iter. This makes it possible to inspect
+    // the pair that we are currently matched with.
+    .each([&ent3](flecs::iter& it, size_t index, Harvest& harvests) {
+        flecs::entity e = it.entity(index);
+        flecs::entity type = it.pair(1).second();
+
+        std::cout << e.name() << " harvests "
+            << harvests.qty << " " << type.name() << std::endl;
+
+		bool has = ent3.has_second<Store>(type);
+		flecs::entity ent = ent3;
+		Store const *s = ent.get_second<Store>(type);
+		flecs::ref<Store> ref = ent.get_ref_second<Store>(type);
+		std::cout<<(bool)s<<std::endl;
+		std::cout<<(bool)ref.try_get()<<std::endl;
+		if(has)
+        	std::cout << ent3.name() << " harvests " << type.name() << std::endl;
+		else
+        	std::cout << ent3.name() << " does not harvest " << type.name() << std::endl;
+    });
+
+	ecs.progress();
+
+	ent1.get([](const Harvest& p, const Food &) {        // read lock
+		std::cout<<"ok"<<std::endl;
+	});
+
 
 	return 0;
 }
