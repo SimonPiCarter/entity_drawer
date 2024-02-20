@@ -46,6 +46,7 @@ public:
 	void set_player(int x, int y, bool b);
 	void spawn_hero(int x, int y);
 	void spawn_wood_cutter(int x, int y);
+	void spawn_food_harvester(int x, int y);
 	int get_wood();
 	int get_food();
 

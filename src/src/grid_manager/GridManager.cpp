@@ -100,7 +100,8 @@ void GridManager::init(int number_p)
 	tree_model.set_override<Wood, ResourceNode>({1, flecs::entity()});
 	tree_model.set_override<Food, ResourceNode>({1, flecs::entity()});
 
-	flecs::entity wood_cutter_model = create_harvester_prefab(ecs, "wood_cutter", "wood_cutter");
+	create_harvester_prefab(ecs, "wood_cutter", "wood_cutter");
+	create_harvester_prefab(ecs, "food_harvester", "food_harvester");
 
 	std::vector<Spawner> spawners_l;
 	spawners_l.reserve(2*number_p);
@@ -345,6 +346,7 @@ void GridManager::_bind_methods()
 	ClassDB::bind_method(D_METHOD("set_player", "x", "y", "b"), &GridManager::set_player);
 	ClassDB::bind_method(D_METHOD("spawn_hero", "x", "y"), &GridManager::spawn_hero);
 	ClassDB::bind_method(D_METHOD("spawn_wood_cutter", "x", "y"), &GridManager::spawn_wood_cutter);
+	ClassDB::bind_method(D_METHOD("spawn_food_harvester", "x", "y"), &GridManager::spawn_food_harvester);
 	ClassDB::bind_method(D_METHOD("get_wood"), &GridManager::get_wood);
 	ClassDB::bind_method(D_METHOD("get_food"), &GridManager::get_food);
 
@@ -408,8 +410,8 @@ void GridManager::spawn_wood_cutter(int x, int y)
 {
 	if(octopus::get(_grid, x, y)) {return;}
 
-	// int32_t available_l = get_resource_amount_available<Wood>(_grid, x, y, 4);
-	// UtilityFunctions::print("wood : ", (int)available_l);
+	int32_t available_l = get_resource_amount_available(_grid, x, y, 4, ecs.component<Wood>());
+	UtilityFunctions::print("wood : ", (int)available_l);
 
 	flecs::entity ent_l = handle_spawner({
 		ecs.lookup("wood_cutter"),
@@ -420,7 +422,27 @@ void GridManager::spawn_wood_cutter(int x, int y)
 		"idle",
 		""
 	});
-	ent_l.set<HarvesterStatic, Wood>({10, _player.get_ref<Wood, ResourceStore>(), 4});
+	ent_l.set<HarvesterStatic, Wood>({50, _player.get_ref<Wood, ResourceStore>(), 4});
+	ent_l.add<HarvesterInit>();
+}
+
+void GridManager::spawn_food_harvester(int x, int y)
+{
+	if(octopus::get(_grid, x, y)) {return;}
+
+	int32_t available_l = get_resource_amount_available(_grid, x, y, 4, ecs.component<Food>());
+	UtilityFunctions::print("food : ", (int)available_l);
+
+	flecs::entity ent_l = handle_spawner({
+		ecs.lookup("food_harvester"),
+		{{x, y}},
+		true,
+		{int8_t(1)},
+		false,
+		"idle",
+		""
+	});
+	ent_l.set<HarvesterStatic, Food>({50, _player.get_ref<Food, ResourceStore>(), 4});
 	ent_l.add<HarvesterInit>();
 }
 
