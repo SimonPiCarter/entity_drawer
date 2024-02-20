@@ -35,11 +35,11 @@ void create_harvester_systems(
 
 	// spawn system
 	ecs.system<HarvesterStatic, Position const>()
-        .term_at(1).second(flecs::Wildcard) // Change first argument to (HarvesterStatic, *)
+		.term_at(1).second(flecs::Wildcard) // Change first argument to (HarvesterStatic, *)
 		.kind<octopus::Iteration>()
 		.with<HarvesterInit>()
 		.each([&](flecs::iter& it, size_t index, HarvesterStatic &hs, Position const &pos) {
-        	flecs::entity e = it.entity(index);
+			flecs::entity e = it.entity(index);
 			flecs::entity type = it.pair(1).second();
 
 			long long x = pos.vec.x.to_int();
@@ -62,7 +62,7 @@ void create_harvester_systems(
 
 	// destroyed system
 	ecs.system<HarvesterStatic, Position const>()
-        .term_at(1).second(flecs::Wildcard) // Change first argument to (HarvesterStatic, *)
+		.term_at(1).second(flecs::Wildcard) // Change first argument to (HarvesterStatic, *)
 		.kind<octopus::Iteration>()
 		.with<Destroyed>()
 		.each([&](flecs::iter& it, size_t index, HarvesterStatic &hs, Position const &pos) {
@@ -91,7 +91,7 @@ void create_harvester_systems(
 		});
 
 	ecs.system<HarvesterStatic const, Harvester const>()
-        .term_at(1).second(flecs::Wildcard) // Change first argument to (HarvesterStatic, *)
+		.term_at(1).second(flecs::Wildcard) // Change first argument to (HarvesterStatic, *)
 		.kind<octopus::Iteration>()
 		.iter([&](flecs::iter& it, HarvesterStatic const *hs, Harvester const *h) {
 			threading(it.count(), pool_p, [&](size_t t, size_t s, size_t e) {

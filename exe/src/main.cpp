@@ -72,8 +72,8 @@
 // 			if(!ent_l.move(grid_l)) stutter_l++;
 // 		}
 // 	}
-//     auto end{std::chrono::steady_clock::now()};
-//     std::chrono::duration<double> elapsed_seconds{end - start};
+//	 auto end{std::chrono::steady_clock::now()};
+//	 std::chrono::duration<double> elapsed_seconds{end - start};
 
 // 	std::cout << "move seq " << elapsed_seconds.count() << std::endl;
 // 	std::cout<<stutter_l<<std::endl;
@@ -90,8 +90,8 @@
 
 // 	init(grid_l, size_l, size_l);
 
-//     auto end{std::chrono::steady_clock::now()};
-//     std::chrono::duration<double> elapsed_seconds{end - start};
+//	 auto end{std::chrono::steady_clock::now()};
+//	 std::chrono::duration<double> elapsed_seconds{end - start};
 
 // 	std::cout << "init " << elapsed_seconds.count() << std::endl;
 
@@ -170,14 +170,14 @@ int main()
 
 	ecs.system<Harvest>()
 	.term_at(1).second(flecs::Wildcard)
-    // Iterate the query with a flecs::iter. This makes it possible to inspect
-    // the pair that we are currently matched with.
-    .each([&ent3](flecs::iter& it, size_t index, Harvest& harvests) {
-        flecs::entity e = it.entity(index);
-        flecs::entity type = it.pair(1).second();
+	// Iterate the query with a flecs::iter. This makes it possible to inspect
+	// the pair that we are currently matched with.
+	.each([&ent3](flecs::iter& it, size_t index, Harvest& harvests) {
+		flecs::entity e = it.entity(index);
+		flecs::entity type = it.pair(1).second();
 
-        std::cout << e.name() << " harvests "
-            << harvests.qty << " " << type.name() << std::endl;
+		std::cout << e.name() << " harvests "
+			<< harvests.qty << " " << type.name() << std::endl;
 
 		bool has = ent3.has_second<Store>(type);
 		flecs::entity ent = ent3;
@@ -186,14 +186,14 @@ int main()
 		std::cout<<(bool)s<<std::endl;
 		std::cout<<(bool)ref.try_get()<<std::endl;
 		if(has)
-        	std::cout << ent3.name() << " harvests " << type.name() << std::endl;
+			std::cout << ent3.name() << " harvests " << type.name() << std::endl;
 		else
-        	std::cout << ent3.name() << " does not harvest " << type.name() << std::endl;
-    });
+			std::cout << ent3.name() << " does not harvest " << type.name() << std::endl;
+	});
 
 	ecs.progress();
 
-	ent1.get([](const Harvest& p, const Food &) {        // read lock
+	ent1.get([](const Harvest& p, const Food &) {		// read lock
 		std::cout<<"ok"<<std::endl;
 	});
 

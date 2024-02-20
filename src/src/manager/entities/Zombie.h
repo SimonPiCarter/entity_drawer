@@ -18,13 +18,13 @@ flecs::entity create_hero_prefab(flecs::world &ecs);
 
 void zombie_routine(
 	octopus::StepContainer &step,
-    octopus::Grid const &grid_p,
-    int32_t timestamp_p,
-    flecs::entity e,
-    octopus::Position const & p,
-    octopus::Speed const & speed,
-    octopus::Target const& target,
-    octopus::Team const &team,
-    octopus::Attack const &a,
-    SpawnTime const &spawn_time
+	octopus::Grid const &grid_p,
+	int32_t timestamp_p,
+	flecs::entity e,
+	octopus::Position const & p,
+	octopus::Speed const & speed,
+	octopus::Target const& target,
+	octopus::Team const &team,
+	octopus::Attack const &a,
+	SpawnTime const &spawn_time
 );
