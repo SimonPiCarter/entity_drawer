@@ -5,6 +5,7 @@
 #include "octopus/components/basic/Team.hh"
 #include "octopus/components/generic/Components.hh"
 
+#include "manager/components/Destructible.h"
 #include "manager/components/Display.h"
 #include "manager/entities/ResourceEntity.h"
 #include "manager/step/CustomStepContainer.h"
@@ -32,8 +33,8 @@ void create_harvester_systems(
 {
 	using namespace octopus;
 
+	// spawn system
 	ecs.system<HarvesterStatic, Position const>()
-		// .multi_threaded()
         .term_at(1).second(flecs::Wildcard) // Change first argument to (HarvesterStatic, *)
 		.kind<octopus::Iteration>()
 		.with<HarvesterInit>()
@@ -57,6 +58,36 @@ void create_harvester_systems(
 				steps_p[0].resource_nodes.add_step(ref_l, std::move(step_l));
 			}
 			e.remove<HarvesterInit>();
+		});
+
+	// destroyed system
+	ecs.system<HarvesterStatic, Position const>()
+        .term_at(1).second(flecs::Wildcard) // Change first argument to (HarvesterStatic, *)
+		.kind<octopus::Iteration>()
+		.with<Destroyed>()
+		.each([&](flecs::iter& it, size_t index, HarvesterStatic &hs, Position const &pos) {
+			flecs::entity e = it.entity(index);
+			flecs::entity type = it.pair(1).second();
+
+			long long x = pos.vec.x.to_int();
+			long long y = pos.vec.y.to_int();
+			hs.harvest_qty = get_resource_amount_available(grid_p, x, y, hs.range, type);
+
+			std::vector<flecs::entity> resources_l = get_resource_in_range(grid_p, x, y, hs.range, type);
+
+			for(flecs::entity &resource_l : resources_l)
+			{
+				flecs::ref<ResourceNode> ref_l = resource_l.get_ref_second<ResourceNode>(type);
+				ResourceNode const * node_l {ref_l.try_get()};
+				ResourceNodeStep step_l {*ref_l.try_get()};
+
+				if(node_l && node_l->used_by == e)
+				{
+					step_l.data.used_by = flecs::entity();
+					steps_p[0].resource_nodes.add_step(ref_l, std::move(step_l));
+				}
+			}
+			e.destruct();
 		});
 
 	ecs.system<HarvesterStatic const, Harvester const>()

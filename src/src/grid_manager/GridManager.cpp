@@ -13,6 +13,7 @@
 #include <chrono>
 #include <sstream>
 
+#include "manager/components/Destructible.h"
 #include "manager/components/Display.h"
 #include "manager/components/Resource.h"
 #include "manager/entities/Zombie.h"
@@ -188,9 +189,18 @@ void GridManager::init(int number_p)
 					std::lock_guard lock_l(_destroyed_entities_mutex);
 					_destroyed_entities.push_back(d_l->idx);
 				}
-                e.destruct();
-            }
-        });
+				// if entity has destructible we remove it and add Destroyed
+				if(e.has<Destructible>())
+				{
+					e.remove<Destructible>();
+					e.add<Destroyed>();
+				}
+				else
+				{
+					e.destruct();
+				}
+			}
+		});
 
     // move computation
     ecs.system()
