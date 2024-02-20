@@ -3,9 +3,9 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
 
-#include "drawer/EntityDrawer.h"
+#include "entity_drawer/EntityDrawer.h"
 #include "grid_manager/GridManager.h"
-#include "manager/lib/frames/FramesLibrary.h"
+#include "entity_drawer/FramesLibrary.h"
 
 void initialize_draw_entity_module(godot::ModuleInitializationLevel p_level) {
   if (p_level != godot::ModuleInitializationLevel::MODULE_INITIALIZATION_LEVEL_SCENE) {

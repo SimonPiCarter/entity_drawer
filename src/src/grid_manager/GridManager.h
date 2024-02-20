@@ -6,8 +6,8 @@
 #include <thread>
 #include <vector>
 #include <mutex>
-#include "drawer/EntityDrawer.h"
-#include "manager/lib/frames/FramesLibrary.h"
+#include "entity_drawer/EntityDrawer.h"
+#include "entity_drawer/FramesLibrary.h"
 #include "manager/step/CustomStepContainer.h"
 
 #include "octopus/components/step/StepContainer.hh"
