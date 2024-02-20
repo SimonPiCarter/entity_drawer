@@ -17,3 +17,5 @@ struct CustomStepContainer
 
 void declare_apply_system(flecs::world &ecs, std::vector<CustomStepContainer> &container_p, ThreadPool &pool);
 void declare_revert_system(flecs::world &ecs, std::vector<CustomStepContainer> &container_p, ThreadPool &pool);
+
+void clear_container(CustomStepContainer &container);

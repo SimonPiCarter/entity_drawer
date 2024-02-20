@@ -14,6 +14,7 @@
 struct Zombie {};
 
 flecs::entity create_zombie_prefab(flecs::world &ecs);
+flecs::entity create_hero_prefab(flecs::world &ecs);
 
 void zombie_routine(
 	octopus::StepContainer &step,

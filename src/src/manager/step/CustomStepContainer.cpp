@@ -1,4 +1,5 @@
 #include "CustomStepContainer.h"
+#include <godot_cpp/variant/utility_functions.hpp>
 
 #include "octopus/components/generic/Components.hh"
 
@@ -52,4 +53,11 @@ void declare_revert_system(flecs::world &ecs, std::vector<CustomStepContainer> &
 				enqueue_and_wait(pool, jobs_l);
 			}
 		});
+}
+
+void clear_container(CustomStepContainer &container)
+{
+	container.resource_stores.steps.clear();
+	container.resource_nodes.steps.clear();
+	container.harvesters.steps.clear();
 }

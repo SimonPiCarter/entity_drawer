@@ -15,6 +15,8 @@
 
 namespace godot {
 
+struct Spawner;
+
 class GridManager : public Node2D {
 	GDCLASS(GridManager, Node2D)
 
@@ -38,8 +40,14 @@ public:
 	void setFramesLibrary(FramesLibrary *lib_p);
 	FramesLibrary *getFramesLibrary() const;
 
+	flecs::entity handle_spawner(Spawner const &spawner);
+
 	// TEST/DEBUG method
 	void set_player(int x, int y, bool b);
+	void spawn_hero(int x, int y);
+	void spawn_wood_cutter(int x, int y);
+	int get_wood();
+	int get_food();
 
 private:
 	std::thread * _controllerThread = nullptr;

@@ -28,6 +28,49 @@ GridManager::~GridManager()
 	delete _pool;
 }
 
+struct Spawner
+{
+	flecs::entity prefab;
+	octopus::Position pos;
+	bool has_team = false;
+	octopus::Team team;
+	bool has_direction = false;
+	StringName cur_anim;
+	StringName next_anim;
+};
+
+flecs::entity GridManager::handle_spawner(Spawner const &spawner)
+{
+	using namespace octopus;
+
+	flecs::entity ent_l = ecs.entity()
+		.is_a(spawner.prefab)
+		.set<Position>(spawner.pos);
+	if(spawner.has_team)
+	{
+		ent_l.set<Team>(spawner.team);
+	}
+	octopus::set(_grid, spawner.pos.vec.x.to_int(), spawner.pos.vec.y.to_int(), ent_l);
+
+	if(ent_l.has<DrawInfo>())
+	{
+		DrawInfo const *draw_info_l = ent_l.get<DrawInfo>();
+		FrameInfo const & info_l = _framesLibrary->getFrameInfo(draw_info_l->frame_id);
+
+		// spawn unit
+		int idx_l = _drawer->add_instance(
+			8*Vector2(real_t(to_double(spawner.pos.vec.x)), real_t(to_double(spawner.pos.vec.y))),
+			info_l.offset, info_l.sprite_frame, spawner.cur_anim, spawner.next_anim, false);
+		if(spawner.has_direction)
+		{
+			_drawer->add_direction_handler(idx_l, info_l.has_up_down);
+		}
+
+		ent_l.set<Drawable>({idx_l});
+	}
+	return ent_l;
+}
+
 void GridManager::init(int number_p)
 {
 	using namespace octopus;
@@ -40,6 +83,8 @@ void GridManager::init(int number_p)
 	ecs.set_threads(nb_threads_l);
 	_steps.clear();
 	_steps.resize(_pool->size(), StepContainer());
+	_custom_steps.clear();
+	_custom_steps.resize(_pool->size(), CustomStepContainer());
 
 	size_t size_l = 512;
 
@@ -48,67 +93,59 @@ void GridManager::init(int number_p)
 	octopus::init(_grid, size_l, size_l);
 
 	flecs::entity zombie_model = create_zombie_prefab(ecs);
+	create_hero_prefab(ecs);
 
 	flecs::entity tree_model = create_resource_node_prefab(ecs, "tree", "tree");
-	tree_model.set<Wood, ResourceNode>(ResourceNode {1, flecs::entity()});
-	tree_model.set<Food, ResourceNode>(ResourceNode {1, flecs::entity()});
+	tree_model.set_override<Wood, ResourceNode>({1, flecs::entity()});
+	tree_model.set_override<Food, ResourceNode>({1, flecs::entity()});
 
+	flecs::entity wood_cutter_model = create_harvester_prefab(ecs, "wood_cutter", "wood_cutter");
+
+	std::vector<Spawner> spawners_l;
+	spawners_l.reserve(2*number_p);
 	for(size_t i = 0 ; i < number_p; ++ i)
 	{
-		std::stringstream ss_l;
-		ss_l<<"t"<<i;
 		Position pos;
 		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
 		pos.vec.y = gen_l.roll_double(0, double(size_l-1));
-		flecs::entity ent_l = ecs.entity(ss_l.str().c_str())
-			.is_a(tree_model)
-			.set<Position>(pos);
-		octopus::set(_grid, pos.vec.x.to_int(), pos.vec.y.to_int(), ent_l);
-
-		if(ent_l.has<DrawInfo>())
-		{
-			DrawInfo const *draw_info_l = ent_l.get<DrawInfo>();
-			FrameInfo const & info_l = _framesLibrary->getFrameInfo(draw_info_l->frame_id);
-
-			// spawn unit
-			int idx_l = _drawer->add_instance(8*Vector2(real_t(to_double(pos.vec.x)), real_t(to_double(pos.vec.y))),
-				info_l.offset, info_l.sprite_frame, "default", "", false);
-
-			ent_l.set<Drawable>({idx_l});
-		}
+		spawners_l.push_back({
+			tree_model,
+			pos,
+			false,
+			Team(),
+			false,
+			"default",
+			""
+		});
 	}
 
-	for(size_t i = 0 ; i < number_p; ++ i)
+	for(size_t i = 0 ; i < 0; ++ i)
 	{
-		std::stringstream ss_l;
-		ss_l<<"e"<<i;
 		Position pos;
 		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
 		pos.vec.y = gen_l.roll_double(0, double(size_l-1));
-		flecs::entity ent_l = ecs.entity(ss_l.str().c_str())
-			.is_a(zombie_model)
-			.set<Position>(pos)
-			.set<Team>({int8_t(0)});
-		octopus::set(_grid, pos.vec.x.to_int(), pos.vec.y.to_int(), ent_l);
+		spawners_l.push_back({
+			zombie_model,
+			pos,
+			true,
+			{int8_t(0)},
+			true,
+			"spawn",
+			"run"
+		});
+	}
 
-		if(ent_l.has<DrawInfo>())
-		{
-			DrawInfo const *draw_info_l = ent_l.get<DrawInfo>();
-			FrameInfo const & info_l = _framesLibrary->getFrameInfo(draw_info_l->frame_id);
-
-			// spawn unit
-			int idx_l = _drawer->add_instance(8*Vector2(real_t(to_double(pos.vec.x)), real_t(to_double(pos.vec.y))),
-				info_l.offset, info_l.sprite_frame, "spawn", "run", false);
-			_drawer->add_direction_handler(idx_l, info_l.has_up_down);
-
-			ent_l.set<Drawable>({idx_l});
-		}
+	for(Spawner &spawner_l : spawners_l)
+	{
+		handle_spawner(spawner_l);
 	}
 
 	_player = ecs.entity("player")
 		.add<Position>()
 		.set<HitPoint>({500000})
 		.set<Team>({1});
+	_player.set<Wood, ResourceStore>({50});
+	_player.set<Food, ResourceStore>({50});
 
 	_drawer->set_time_step(0.1);
 
@@ -127,7 +164,7 @@ void GridManager::init(int number_p)
 			);
 		});
 
-	create_harvester_system(ecs, _timestamp, *_pool, _custom_steps);
+	create_harvester_systems(ecs, _grid, _timestamp, *_pool, _custom_steps);
 
     // destruct entities when hp < 0
     ecs.system<HitPoint const>()
@@ -237,6 +274,11 @@ void GridManager::loop()
 		octopus::clear_container(container_l);
 	}
 
+	for(CustomStepContainer &container_l : _custom_steps)
+	{
+		clear_container(container_l);
+	}
+
     auto end{std::chrono::steady_clock::now()};
     std::chrono::duration<double> diff = end - start;
 
@@ -291,6 +333,10 @@ void GridManager::_bind_methods()
 
 	// DEBUG
 	ClassDB::bind_method(D_METHOD("set_player", "x", "y", "b"), &GridManager::set_player);
+	ClassDB::bind_method(D_METHOD("spawn_hero", "x", "y"), &GridManager::spawn_hero);
+	ClassDB::bind_method(D_METHOD("spawn_wood_cutter", "x", "y"), &GridManager::spawn_wood_cutter);
+	ClassDB::bind_method(D_METHOD("get_wood"), &GridManager::get_wood);
+	ClassDB::bind_method(D_METHOD("get_food"), &GridManager::get_food);
 
 	ADD_GROUP("GridManager", "GridManager_");
 }
@@ -331,13 +377,61 @@ void GridManager::set_player(int x, int y, bool b)
 	octopus::Position * pos_l = _player.mut(ecs).get_mut<octopus::Position>();
 	pos_l->vec.x = x;
 	pos_l->vec.y = y;
-
-	// if(b)
-	// {
-	// 	int32_t available_l = get_resource_amount_available<Wood>(_grid, x, y, 4);
-	// 	UtilityFunctions::print("wood : ", (int)available_l);
-	// }
 }
 
+void GridManager::spawn_hero(int x, int y)
+{
+	if(octopus::get(_grid, x, y)) {return;}
+
+	handle_spawner({
+		ecs.lookup("hero_model"),
+		{{x, y}},
+		true,
+		{int8_t(1)},
+		true,
+		"idle",
+		"run"
+	});
+}
+
+void GridManager::spawn_wood_cutter(int x, int y)
+{
+	if(octopus::get(_grid, x, y)) {return;}
+
+	// int32_t available_l = get_resource_amount_available<Wood>(_grid, x, y, 4);
+	// UtilityFunctions::print("wood : ", (int)available_l);
+
+	flecs::entity ent_l = handle_spawner({
+		ecs.lookup("wood_cutter"),
+		{{x, y}},
+		true,
+		{int8_t(1)},
+		false,
+		"idle",
+		""
+	});
+	ent_l.set<HarvesterStatic, Wood>({10, _player.get_ref<Wood, ResourceStore>(), 4});
+	ent_l.add<HarvesterInit>();
+}
+
+template<typename Res_t>
+int get_res(flecs::entity ent)
+{
+	ResourceStore const *store_l = ent.get<Res_t, ResourceStore>();
+	if(store_l)
+	{
+		return store_l->amount;
+	}
+	return 0;
+}
+
+int GridManager::get_wood()
+{
+	return get_res<Wood>(_player);
+}
+int GridManager::get_food()
+{
+	return get_res<Food>(_player);
+}
 
 }

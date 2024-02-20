@@ -4,8 +4,8 @@
 template<>
 void octopus::apply_step(ResourceStoreMemento &m, ResourceStoreMemento::Data &d, ResourceStoreMemento::Step const &s)
 {
-	std::swap(d, m.data);
-	d = s.data;
+	m.data = d;
+	d.amount += s.data.amount;
 }
 
 template<>

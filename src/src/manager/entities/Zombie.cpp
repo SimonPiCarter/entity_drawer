@@ -19,6 +19,23 @@ flecs::entity create_zombie_prefab(flecs::world &ecs)
 		.add<Zombie>();
 }
 
+flecs::entity create_hero_prefab(flecs::world &ecs)
+{
+	using namespace octopus;
+
+	return ecs.prefab("hero_model")
+		.set_override<Target>({flecs::entity(), 9})
+		.set_override<HitPoint>({50})
+		.override<Position>()
+		.override<Attack>()
+		.override<Team>()
+		.override<Drawable>()
+		.override<SpawnTime>()
+		.set_override<Speed>({0.25})
+		.set<DrawInfo>({"hero"})
+		.add<Zombie>();
+}
+
 void zombie_routine(
 	octopus::StepContainer &step,
     octopus::Grid const &grid_p,

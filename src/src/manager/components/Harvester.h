@@ -6,9 +6,14 @@
 
 #include "manager/components/Resource.h"
 
+/// @brief component used to trigger init
+struct HarvesterInit {};
+
 struct HarvesterStatic {
-	int32_t time_for_harvest;
+	int32_t time_for_harvest = 0;
 	flecs::ref<ResourceStore> store;
+	int32_t range = 0;
+	int32_t harvest_qty = 0;
 };
 
 struct Harvester {
