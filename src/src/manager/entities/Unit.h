@@ -7,15 +7,15 @@
 #include "octopus/components/basic/HitPoint.hh"
 #include "octopus/components/basic/Team.hh"
 #include "octopus/components/behaviour/target/Target.hh"
+#include "octopus/components/behaviour/move/Move.hh"
 #include "octopus/components/step/StepContainer.hh"
 
 #include "manager/components/SpawnTime.h"
 
-struct Zombie {};
+struct Unit {};
+flecs::entity create_hero_prefab(flecs::world &ecs);
 
-flecs::entity create_zombie_prefab(flecs::world &ecs);
-
-void zombie_routine(
+void unit_routine(
 	octopus::StepContainer &step,
 	octopus::Grid const &grid_p,
 	int32_t timestamp_p,
@@ -25,5 +25,6 @@ void zombie_routine(
 	octopus::Target const& target,
 	octopus::Team const &team,
 	octopus::Attack const &a,
+	octopus::Move const &move,
 	SpawnTime const &spawn_time
 );

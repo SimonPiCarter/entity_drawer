@@ -17,6 +17,7 @@
 #include "manager/components/Display.h"
 #include "manager/components/Resource.h"
 #include "manager/entities/Zombie.h"
+#include "manager/entities/Unit.h"
 #include "manager/entities/ResourceEntity.h"
 #include "manager/entities/HarvesterEntity.h"
 
@@ -154,13 +155,29 @@ void GridManager::init(int number_p)
 	/// ITERATION
 	ecs.system<Position const, Target const, Team const, Attack const, SpawnTime const, Speed const>()
 		.kind<Iteration>()
+		.with<Zombie>()
 		.iter([this](flecs::iter& it, Position const *pos, Target const *target, Team const *team, Attack const* attack, SpawnTime const* spawn, Speed const *speed) {
-			threading(it.count(), *_pool, [&it, &pos, &target, &team, &attack, &spawn, &speed, this](size_t t, size_t s, size_t e) {
+			threading(it.count(), *_pool, [&](size_t t, size_t s, size_t e) {
 				// set up memory
 				reserve(_steps[t], e-s);
 				for (size_t j = s; j < e; j ++) {
 					flecs::entity &ent = it.entity(j);
 					zombie_routine(_steps[t], _grid, _timestamp, ent, pos[j], speed[j], target[j], team[j], attack[j], spawn[j]);
+				}
+			}
+			);
+		});
+	ecs.system<Position const, Target const, Team const, Attack const, SpawnTime const, Speed const, Move const>()
+		.kind<Iteration>()
+		.with<Unit>()
+		.iter([this](flecs::iter& it, Position const *pos, Target const *target, Team const *team,
+						Attack const* attack, SpawnTime const* spawn, Speed const *speed, Move const *move) {
+			threading(it.count(), *_pool, [&](size_t t, size_t s, size_t e) {
+				// set up memory
+				reserve(_steps[t], e-s);
+				for (size_t j = s; j < e; j ++) {
+					flecs::entity &ent = it.entity(j);
+					unit_routine(_steps[t], _grid, _timestamp, ent, pos[j], speed[j], target[j], team[j], attack[j], move[j], spawn[j]);
 				}
 			}
 			);
@@ -320,6 +337,8 @@ void GridManager::_process(double delta)
 
 			for(int idx : _destroyed_entities)
 			{
+				// keep static sprite
+				_drawer->set_new_pos(idx, _drawer->get_old_pos(idx));
 				_drawer->remove_direction_handler(idx);
 				_drawer->set_animation_one_shot(idx, "death");
 			}
