@@ -16,6 +16,7 @@
 #include "manager/components/Destructible.h"
 #include "manager/components/Display.h"
 #include "manager/components/Resource.h"
+#include "manager/components/Spawner.h"
 #include "manager/entities/Zombie.h"
 #include "manager/entities/Unit.h"
 #include "manager/entities/ResourceEntity.h"
@@ -29,17 +30,6 @@ GridManager::~GridManager()
 	delete _controllerThread;
 	delete _pool;
 }
-
-struct Spawner
-{
-	flecs::entity prefab;
-	octopus::Position pos;
-	bool has_team = false;
-	octopus::Team team;
-	bool has_direction = false;
-	StringName cur_anim;
-	StringName next_anim;
-};
 
 flecs::entity GridManager::handle_spawner(Spawner const &spawner)
 {

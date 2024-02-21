@@ -13,9 +13,10 @@
 #include "octopus/components/step/StepContainer.hh"
 #include "octopus/utils/Grid.hh"
 
+struct Spawner;
+
 namespace godot {
 
-struct Spawner;
 
 class GridManager : public Node2D {
 	GDCLASS(GridManager, Node2D)
