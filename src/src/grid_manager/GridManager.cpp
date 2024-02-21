@@ -31,6 +31,11 @@ GridManager::~GridManager()
 	delete _pool;
 }
 
+double GridManager::get_world_size() const
+{
+	return _world_size;
+}
+
 flecs::entity GridManager::handle_spawner(Spawner const &spawner)
 {
 	using namespace octopus;
@@ -55,7 +60,7 @@ flecs::entity GridManager::handle_spawner(Spawner const &spawner)
 
 		// spawn unit
 		int idx_l = _drawer->add_instance(
-			8*Vector2(real_t(to_double(spawner.pos.vec.x)), real_t(to_double(spawner.pos.vec.y))),
+			get_world_size()*Vector2(real_t(to_double(spawner.pos.vec.x)), real_t(to_double(spawner.pos.vec.y))),
 			info_l.offset, info_l.sprite_frame, spawner.cur_anim, spawner.next_anim, false);
 		if(spawner.has_direction)
 		{
@@ -259,7 +264,7 @@ void GridManager::init(int number_p)
 		.multi_threaded()
 		.kind<Display>()
 		.each([this](Position const &pos, Speed const &, Drawable const &drawable) {
-			_drawer->set_new_pos(drawable.idx, 8*Vector2(real_t(octopus::to_double(pos.vec.x)), real_t(octopus::to_double(pos.vec.y))));
+			_drawer->set_new_pos(drawable.idx, get_world_size() * Vector2(real_t(octopus::to_double(pos.vec.x)), real_t(octopus::to_double(pos.vec.y))));
 		});
 
 	ecs.system<Attack const, Drawable const>()
@@ -363,6 +368,7 @@ void GridManager::_bind_methods()
 	ClassDB::bind_method(D_METHOD("getEntityDrawer"), &GridManager::getEntityDrawer);
 	ClassDB::bind_method(D_METHOD("setFramesLibrary", "library"), &GridManager::setFramesLibrary);
 	ClassDB::bind_method(D_METHOD("getFramesLibrary"), &GridManager::getFramesLibrary);
+	ClassDB::bind_method(D_METHOD("get_world_size"), &GridManager::get_world_size);
 
 	// DEBUG
 	ClassDB::bind_method(D_METHOD("set_player", "x", "y", "b"), &GridManager::set_player);

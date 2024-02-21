@@ -40,6 +40,7 @@ public:
 	void setFramesLibrary(FramesLibrary *lib_p);
 	FramesLibrary *getFramesLibrary() const;
 
+	double get_world_size() const;
 	flecs::entity handle_spawner(Spawner const &spawner);
 
 	// TEST/DEBUG method
@@ -78,6 +79,8 @@ private:
 
 	EntityDrawer * _drawer = nullptr;
 	FramesLibrary * _framesLibrary = nullptr;
+
+	double _world_size = 12.;
 };
 
 }
