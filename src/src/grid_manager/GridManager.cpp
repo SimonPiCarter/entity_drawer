@@ -40,6 +40,11 @@ flecs::entity GridManager::handle_spawner(Spawner const &spawner)
 {
 	using namespace octopus;
 
+	if(octopus::get(_grid, spawner.pos.vec.x.to_int(), spawner.pos.vec.y.to_int()))
+	{
+		return flecs::entity();
+	}
+
 	flecs::entity ent_l = ecs.entity()
 		.is_a(spawner.prefab)
 		.set<Position>(spawner.pos);
@@ -103,6 +108,8 @@ void GridManager::init(int number_p)
 
 	create_harvester_prefab(ecs, "wood_cutter", "wood_cutter");
 	create_harvester_prefab(ecs, "food_harvester", "food_harvester");
+
+	ecs.component<Destructible>();
 
 	std::vector<Spawner> spawners_l;
 	spawners_l.reserve(2*number_p);
@@ -337,11 +344,15 @@ void GridManager::_process(double delta)
 			ecs.set_pipeline(_display);
 			ecs.progress();
 
+			std::vector<Spawner> non_spawned_l;
 			for(Spawner const &spawner_l : _spawned_entities)
 			{
-				handle_spawner(spawner_l);
+				if(!handle_spawner(spawner_l))
+				{
+					non_spawned_l.push_back(spawner_l);
+				}
 			}
-			_spawned_entities.clear();
+			std::swap(non_spawned_l, _spawned_entities);
 
 			for(int idx : _destroyed_entities)
 			{
