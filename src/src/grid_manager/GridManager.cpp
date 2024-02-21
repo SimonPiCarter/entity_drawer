@@ -16,11 +16,11 @@
 #include "manager/components/Destructible.h"
 #include "manager/components/Display.h"
 #include "manager/components/Resource.h"
-#include "manager/components/Spawner.h"
 #include "manager/entities/Zombie.h"
 #include "manager/entities/Unit.h"
 #include "manager/entities/ResourceEntity.h"
 #include "manager/entities/HarvesterEntity.h"
+#include "manager/entities/wave/Wave.h"
 
 namespace godot {
 
@@ -38,6 +38,10 @@ flecs::entity GridManager::handle_spawner(Spawner const &spawner)
 	flecs::entity ent_l = ecs.entity()
 		.is_a(spawner.prefab)
 		.set<Position>(spawner.pos);
+	if(ent_l.has<SpawnTime>())
+	{
+		ent_l.get_mut<SpawnTime>()->spawn_timestamp = _timestamp;
+	}
 	if(spawner.has_team)
 	{
 		ent_l.set<Team>(spawner.team);
@@ -60,6 +64,7 @@ flecs::entity GridManager::handle_spawner(Spawner const &spawner)
 
 		ent_l.set<Drawable>({idx_l});
 	}
+	spawner.func(ent_l);
 	return ent_l;
 }
 
@@ -85,7 +90,7 @@ void GridManager::init(int number_p)
 	octopus::init(_grid, size_l, size_l);
 
 	flecs::entity zombie_model = create_zombie_prefab(ecs);
-	create_hero_prefab(ecs);
+	flecs::entity hero_model = create_hero_prefab(ecs);
 
 	flecs::entity tree_model = create_resource_node_prefab(ecs, "tree", "tree");
 	tree_model.set_override<Wood, ResourceNode>({1, flecs::entity()});
@@ -175,6 +180,8 @@ void GridManager::init(int number_p)
 
 	create_harvester_systems(ecs, _grid, _timestamp, *_pool, _custom_steps);
 
+	wave_system(ecs, _grid, _timestamp, _custom_steps, _spawned_entities);
+
 	// destruct entities when hp < 0
 	ecs.system<HitPoint const>()
 		.multi_threaded()
@@ -208,7 +215,7 @@ void GridManager::init(int number_p)
 					e.destruct();
 				}
 			}
-		});
+	});
 
 	// move computation
 	ecs.system()
@@ -324,6 +331,12 @@ void GridManager::_process(double delta)
 
 			ecs.set_pipeline(_display);
 			ecs.progress();
+
+			for(Spawner const &spawner_l : _spawned_entities)
+			{
+				handle_spawner(spawner_l);
+			}
+			_spawned_entities.clear();
 
 			for(int idx : _destroyed_entities)
 			{

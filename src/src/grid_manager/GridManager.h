@@ -8,12 +8,11 @@
 #include <mutex>
 #include "entity_drawer/EntityDrawer.h"
 #include "entity_drawer/FramesLibrary.h"
+#include "manager/components/Spawner.h"
 #include "manager/step/CustomStepContainer.h"
 
 #include "octopus/components/step/StepContainer.hh"
 #include "octopus/utils/Grid.hh"
-
-struct Spawner;
 
 namespace godot {
 
@@ -66,6 +65,7 @@ private:
 	std::vector<octopus::StepContainer> _steps;
 	std::vector<CustomStepContainer> _custom_steps;
 
+	std::vector<Spawner> _spawned_entities;
 	std::vector<int> _destroyed_entities;
 	std::mutex _destroyed_entities_mutex;
 
