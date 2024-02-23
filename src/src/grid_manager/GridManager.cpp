@@ -341,6 +341,8 @@ void GridManager::_process(double delta)
 			_controllerThread->join();
 			++_timestamp;
 
+			_drawer->update_pos();
+
 			ecs.set_pipeline(_display);
 			ecs.progress();
 
@@ -362,8 +364,6 @@ void GridManager::_process(double delta)
 				_drawer->set_animation_one_shot(idx, "death");
 			}
 			_destroyed_entities.clear();
-
-			_drawer->update_pos();
 		}
 
 		// new loop
