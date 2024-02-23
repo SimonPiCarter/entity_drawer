@@ -36,6 +36,11 @@ double GridManager::get_world_size() const
 	return _world_size;
 }
 
+int GridManager::get_grid_build_size() const
+{
+	return _grid_build_size;
+}
+
 flecs::entity GridManager::handle_spawner(Spawner const &spawner)
 {
 	using namespace octopus;
@@ -380,6 +385,8 @@ void GridManager::_bind_methods()
 	ClassDB::bind_method(D_METHOD("setFramesLibrary", "library"), &GridManager::setFramesLibrary);
 	ClassDB::bind_method(D_METHOD("getFramesLibrary"), &GridManager::getFramesLibrary);
 	ClassDB::bind_method(D_METHOD("get_world_size"), &GridManager::get_world_size);
+	ClassDB::bind_method(D_METHOD("get_grid_build_size"), &GridManager::get_grid_build_size);
+	ClassDB::bind_method(D_METHOD("is_grid_build_free", "x", "y"), &GridManager::is_grid_build_free);
 
 	// DEBUG
 	ClassDB::bind_method(D_METHOD("set_player", "x", "y", "b"), &GridManager::set_player);
@@ -411,6 +418,20 @@ FramesLibrary *GridManager::getFramesLibrary() const
 	return _framesLibrary;
 }
 
+bool GridManager::is_grid_build_free(int world_x_p, int world_y_p)
+{
+	for(int x = std::max<int>(0, world_x_p * _grid_build_size) ; x < std::min<int>((world_x_p + 1)*_grid_build_size, _grid.x) ; ++ x)
+	{
+		for(int y = std::max<int>(0, world_y_p * _grid_build_size) ; y < std::min<int>((world_y_p + 1)*_grid_build_size, _grid.y) ; ++ y)
+		{
+			if(octopus::get(_grid, x, y))
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
 
 // TEST/DEBUG method
 void GridManager::set_player(int x, int y, bool b)

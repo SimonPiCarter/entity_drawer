@@ -40,7 +40,11 @@ public:
 	void setFramesLibrary(FramesLibrary *lib_p);
 	FramesLibrary *getFramesLibrary() const;
 
+	bool is_grid_build_free(int world_x_p, int world_y_p);
+
 	double get_world_size() const;
+	int get_grid_build_size() const;
+
 	flecs::entity handle_spawner(Spawner const &spawner);
 
 	// TEST/DEBUG method
@@ -81,6 +85,7 @@ private:
 	FramesLibrary * _framesLibrary = nullptr;
 
 	double _world_size = 12.;
+	int32_t _grid_build_size = 4;
 };
 
 }
