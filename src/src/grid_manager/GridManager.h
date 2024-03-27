@@ -54,10 +54,12 @@ public:
 	void spawn_food_harvester(int x, int y);
 	int get_wood();
 	int get_food();
+	int get_dead() const {return _dead;}
 
 private:
 	std::thread * _controllerThread = nullptr;
 
+	uint64_t _dead = 0;
 	bool _over = false;
 	bool _paused = false;
 	bool _init = false;

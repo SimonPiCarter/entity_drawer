@@ -118,7 +118,7 @@ void GridManager::init(int number_p)
 
 	std::vector<Spawner> spawners_l;
 	spawners_l.reserve(2*number_p);
-	for(size_t i = 0 ; i < number_p; ++ i)
+	for(size_t i = 0 ; i < 0; ++ i)
 	{
 		Position pos;
 		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
@@ -134,7 +134,7 @@ void GridManager::init(int number_p)
 		});
 	}
 
-	for(size_t i = 0 ; i < number_p; ++ i)
+	for(size_t i = 0 ; i < 0; ++ i)
 	{
 		Position pos;
 		pos.vec.x = gen_l.roll_double(0, double(size_l-1));
@@ -154,6 +154,66 @@ void GridManager::init(int number_p)
 	{
 		handle_spawner(spawner_l);
 	}
+
+	Spawner wave_spawner_l {
+		zombie_model,
+		octopus::Position(),
+		true,
+		{int8_t(0)},
+		true,
+		"spawn",
+		"run",
+		[](flecs::entity e){
+			e.remove<Zombie>();
+			e.add<Unit>();
+			Move m;
+			m.enabled = true;
+			m.aggro = true;
+			m.destination.vec = octopus::Vector(200, 200);
+			e.set<Move>(m);
+		}
+	};
+
+	std::vector<octopus::Position> pos_l;
+	for(int i = 100; i < 150 ; ++ i)
+		for(int j = 100; j < 350 ; ++ j)
+			pos_l.push_back({{i,j}});
+	ecs.entity("wave")
+		.set<Wave>({10,
+		wave_spawner_l,
+		pos_l,
+		0,
+		number_p}
+	);
+
+	Spawner wave_spawner2_l {
+		hero_model,
+		octopus::Position(),
+		true,
+		{int8_t(1)},
+		true,
+		"run",
+		"",
+		[](flecs::entity e){
+			Move m;
+			m.enabled = true;
+			m.aggro = true;
+			m.destination.vec = octopus::Vector(200, 200);
+			e.set<Move>(m);
+		}
+	};
+
+	std::vector<octopus::Position> pos2_l;
+	for(int i = 300; i < 350 ; ++ i)
+		for(int j = 100; j < 350 ; ++ j)
+			pos2_l.push_back({{i,j}});
+	ecs.entity("wave2")
+		.set<Wave>({10,
+		wave_spawner2_l,
+		pos2_l,
+		0,
+		number_p}
+	);
 
 	_player = ecs.entity("player")
 		.add<Position>()
@@ -324,7 +384,7 @@ void GridManager::loop()
 	auto end{std::chrono::steady_clock::now()};
 	std::chrono::duration<double> diff = end - start;
 
-	UtilityFunctions::print("total ", diff.count()*1000.);
+	// UtilityFunctions::print("total ", diff.count()*1000.);
 }
 
 void GridManager::_process(double delta)
@@ -363,6 +423,7 @@ void GridManager::_process(double delta)
 
 			for(int idx : _destroyed_entities)
 			{
+				++_dead;
 				// keep static sprite
 				_drawer->set_new_pos(idx, _drawer->get_old_pos(idx));
 				_drawer->remove_direction_handler(idx);
@@ -395,6 +456,7 @@ void GridManager::_bind_methods()
 	ClassDB::bind_method(D_METHOD("spawn_food_harvester", "x", "y"), &GridManager::spawn_food_harvester);
 	ClassDB::bind_method(D_METHOD("get_wood"), &GridManager::get_wood);
 	ClassDB::bind_method(D_METHOD("get_food"), &GridManager::get_food);
+	ClassDB::bind_method(D_METHOD("get_dead"), &GridManager::get_dead);
 
 	ADD_GROUP("GridManager", "GridManager_");
 }
@@ -464,6 +526,14 @@ void GridManager::spawn_hero(int x, int y)
 		"idle",
 		"run"
 	});
+
+	flecs::query<octopus::Move> q = ecs.query_builder<octopus::Move>().with<Unit>().build();
+
+	q.each([&](octopus::Move& m) {
+		m.enabled = true;
+		m.aggro = true;
+		m.destination.vec = octopus::Vector(x, y);
+	});
 }
 
 void GridManager::spawn_wood_cutter(int x, int y)
@@ -484,6 +554,14 @@ void GridManager::spawn_wood_cutter(int x, int y)
 	});
 	ent_l.set<HarvesterStatic, Wood>({50, _player.get_ref<Wood, ResourceStore>(), 4});
 	ent_l.add<HarvesterInit>();
+
+	flecs::query<octopus::Move> q = ecs.query_builder<octopus::Move>().with<Unit>().build();
+
+	q.each([&](octopus::Move& m) {
+		m.enabled = true;
+		m.aggro = false;
+		m.destination.vec = octopus::Vector(x, y);
+	});
 }
 
 void GridManager::spawn_food_harvester(int x, int y)
