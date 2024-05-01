@@ -47,6 +47,8 @@ public:
 
 	flecs::entity handle_spawner(Spawner const &spawner);
 
+	void set_pause(bool paused_p) { _paused = paused_p; }
+
 	// TEST/DEBUG method
 	void set_player(int x, int y, bool b);
 	void spawn_hero(int x, int y);

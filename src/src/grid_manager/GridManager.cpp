@@ -394,7 +394,10 @@ void GridManager::_process(double delta)
 	{
 		return;
 	}
-	_elapsed += delta;
+	if(!_paused)
+	{
+		_elapsed += delta;
+	}
 
 	if(_elapsed >= 0.1)
 	{
@@ -448,6 +451,7 @@ void GridManager::_bind_methods()
 	ClassDB::bind_method(D_METHOD("get_world_size"), &GridManager::get_world_size);
 	ClassDB::bind_method(D_METHOD("get_grid_build_size"), &GridManager::get_grid_build_size);
 	ClassDB::bind_method(D_METHOD("is_grid_build_free", "x", "y"), &GridManager::is_grid_build_free);
+	ClassDB::bind_method(D_METHOD("set_pause", "paused"), &GridManager::set_pause);
 
 	// DEBUG
 	ClassDB::bind_method(D_METHOD("set_player", "x", "y", "b"), &GridManager::set_player);
