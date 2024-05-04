@@ -2,5 +2,5 @@
 	path = src/src/entity_drawer
 	url = git@github.com:SimonPiCarter/godot_entity_drawer.git
 [submodule "src/src/smart_list"]
-	path = src/src/smart_list
+	path = src/smart_list
 	url = git@github.com:SimonPiCarter/smart_list.git
