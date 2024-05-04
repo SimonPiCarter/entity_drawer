@@ -76,6 +76,7 @@ flecs::entity GridManager::handle_spawner(Spawner const &spawner)
 		{
 			_drawer->add_direction_handler(idx_l, info_l.has_up_down);
 		}
+		_drawer->add_pickable(idx_l);
 
 		ent_l.set<Drawable>({idx_l});
 	}
