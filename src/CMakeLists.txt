@@ -19,12 +19,14 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX src FILES ${SOURCES})
 
+add_subdirectory(smart_list)
+
 find_package(octopus)
 find_package(flecs)
 
 # Add a dynamic library called godoctopus - this builds godoctopus.dll
 add_library(entity_drawer SHARED ${SOURCES})
-target_link_libraries(entity_drawer PRIVATE godot::cpp octopus flecs::flecs_static)
+target_link_libraries(entity_drawer PRIVATE godot::cpp octopus flecs::flecs_static smart_list)
 target_include_directories(entity_drawer PRIVATE src)
 
 install (TARGETS entity_drawer EXPORT ${PROJECT_NAME}-export)
